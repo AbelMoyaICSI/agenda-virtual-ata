@@ -1,0 +1,353 @@
+/* Estilos específicos para componentes del sistema */
+
+/* === BOTONES INSTITUCIONALES === */
+.btn-primary {
+  background-color: var(--color-ata-verde);
+  color: var(--color-ata-blanco);
+  border: 2px solid var(--color-ata-verde);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-ata-verde-oscuro);
+  border-color: var(--color-ata-verde-oscuro);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: var(--color-ata-azul);
+  color: var(--color-ata-blanco);
+  border: 2px solid var(--color-ata-azul);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-ata-azul-oscuro);
+  border-color: var(--color-ata-azul-oscuro);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger {
+  background-color: var(--color-ata-rojo);
+  color: var(--color-ata-blanco);
+  border: 2px solid var(--color-ata-rojo);
+}
+
+.btn-danger:hover {
+  background-color: var(--color-ata-rojo-oscuro);
+  border-color: var(--color-ata-rojo-oscuro);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--color-ata-verde);
+  border: 2px solid var(--color-ata-verde);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-ata-verde);
+  color: var(--color-ata-blanco);
+}
+
+/* === TARJETAS === */
+.card {
+  background-color: var(--color-ata-blanco);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+  padding-bottom: var(--spacing-4);
+  border-bottom: 2px solid #f7fafc;
+}
+
+.card-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ata-negro);
+  margin: 0;
+}
+
+/* === BADGES DE SEVERIDAD === */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--border-radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-leve {
+  background-color: var(--color-ata-verde);
+  color: var(--color-ata-blanco);
+}
+
+.badge-grave {
+  background-color: var(--color-ata-dorado);
+  color: var(--color-ata-negro);
+}
+
+.badge-muy-grave {
+  background-color: var(--color-ata-rojo);
+  color: var(--color-ata-blanco);
+}
+
+.badge-pendiente {
+  background-color: #ffd60a;
+  color: var(--color-ata-negro);
+}
+
+.badge-completado {
+  background-color: var(--color-ata-verde);
+  color: var(--color-ata-blanco);
+}
+
+/* === FORMULARIOS === */
+.form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.form-label {
+  display: block;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ata-negro);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 2px solid #e2e8f0;
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-base);
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: var(--color-ata-azul);
+  box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.1);
+  outline: none;
+}
+
+.form-input.error {
+  border-color: var(--color-ata-rojo);
+}
+
+.form-error {
+  color: var(--color-ata-rojo);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-1);
+  display: block;
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right var(--spacing-3) center;
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  padding-right: var(--spacing-10);
+}
+
+/* === ALERTAS === */
+.alert {
+  padding: var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  border: 1px solid;
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.alert-success {
+  background-color: rgba(0, 107, 63, 0.1);
+  border-color: var(--color-ata-verde);
+  color: var(--color-ata-verde-oscuro);
+}
+
+.alert-warning {
+  background-color: rgba(255, 215, 0, 0.1);
+  border-color: var(--color-ata-dorado);
+  color: #b45309;
+}
+
+.alert-danger {
+  background-color: rgba(193, 39, 45, 0.1);
+  border-color: var(--color-ata-rojo);
+  color: var(--color-ata-rojo-oscuro);
+}
+
+.alert-info {
+  background-color: rgba(30, 144, 255, 0.1);
+  border-color: var(--color-ata-azul);
+  color: var(--color-ata-azul-oscuro);
+}
+
+/* === TABLAS === */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-ata-blanco);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.table th {
+  background-color: var(--color-ata-verde);
+  color: var(--color-ata-blanco);
+  font-weight: var(--font-weight-bold);
+  padding: var(--spacing-4);
+  text-align: left;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  padding: var(--spacing-4);
+  border-bottom: 1px solid #e2e8f0;
+  font-size: var(--font-size-sm);
+}
+
+.table tr:hover td {
+  background-color: #f7fafc;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+/* === NAVEGACIÓN === */
+.nav {
+  background-color: var(--color-ata-verde);
+  color: var(--color-ata-blanco);
+  padding: var(--spacing-4) 0;
+  box-shadow: var(--shadow-md);
+}
+
+.nav-container {
+  max-width: var(--breakpoint-xl);
+  margin: 0 auto;
+  padding: 0 var(--spacing-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-ata-blanco);
+  text-decoration: none;
+}
+
+.nav-logo:hover {
+  color: var(--color-ata-blanco);
+  text-decoration: none;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+.nav-link {
+  color: var(--color-ata-blanco);
+  font-weight: var(--font-weight-regular);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius-md);
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-ata-blanco);
+  text-decoration: none;
+}
+
+.nav-link.active {
+  background-color: var(--color-ata-verde-oscuro);
+  font-weight: var(--font-weight-bold);
+}
+
+/* === CONTAINER PRINCIPAL === */
+.main-container {
+  flex: 1;
+  padding: var(--spacing-8) var(--spacing-4);
+  max-width: var(--breakpoint-xl);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* === ESTADOS DE CARGA === */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--color-ata-verde);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* === RESPONSIVO === */
+@media (max-width: 768px) {
+  .main-container {
+    padding: var(--spacing-4);
+  }
+  
+  .card {
+    padding: var(--spacing-4);
+  }
+  
+  .nav-menu {
+    gap: var(--spacing-3);
+  }
+  
+  .table th,
+  .table td {
+    padding: var(--spacing-3);
+    font-size: var(--font-size-xs);
+  }
+  
+  button {
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: var(--font-size-sm);
+  }
+}

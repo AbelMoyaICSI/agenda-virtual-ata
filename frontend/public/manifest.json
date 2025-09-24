@@ -1,0 +1,26 @@
+{
+  "name": "Agenda Virtual ATA",
+  "short_name": "Agenda ATA",
+  "description": "Sistema de gestión de incidencias escolares I.E. 80002 Antonio Torres Araujo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#006B3F",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-ata-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-ata-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "es"
+}
