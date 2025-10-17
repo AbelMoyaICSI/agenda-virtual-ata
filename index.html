@@ -237,6 +237,46 @@
             transition: all 0.3s ease;
         }
 
+        /* Estilos para input-group con ícono de lupa */
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group .form-input {
+            padding-right: 45px;
+        }
+
+        .input-group-append {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .input-group-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 100%;
+            color: #6c757d;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .input-group-icon i {
+            font-size: 16px;
+        }
+
+        .form-input:focus + .input-group-append .input-group-icon {
+            color: var(--color-ata-verde);
+        }
+
         .password-container {
             position: relative;
             display: flex;
@@ -1358,61 +1398,243 @@
                             Datos de la Incidencia
                         </h3>
                         
-                        <form id="incidenciaForm">
+                        <form id="incidenciaForm" onsubmit="submitIncident(event)">
                             <div class="grid grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Buscar Estudiante</label>
-                                    <input type="text" class="form-input" placeholder="Nombre del estudiante..." required>
+                                    <div class="input-group">
+                                        <input type="text" class="form-input" id="studentSearch" placeholder="Nombre del estudiante..." required>
+                                        <div class="input-group-append">
+                                            <span class="input-group-icon">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label class="form-label">Aula</label>
-                                    <select class="form-input" required>
-                                        <option value="">Seleccionar aula</option>
-                                        <option value="1A">1°A</option>
-                                        <option value="1B">1°B</option>
-                                        <option value="2A">2°A</option>
-                                        <option value="2B">2°B</option>
-                                        <option value="3A">3°A</option>
-                                        <option value="3B">3°B</option>
+                                    <label class="form-label">Nivel y Aula</label>
+                                    <select class="form-input" id="aulaSelect" required>
+                                        <option value="">Seleccionar nivel y aula</option>
+                                        
+                                        <optgroup label="🧸 INICIAL">
+                                            <option value="3A">3 años - A</option>
+                                            <option value="3B">3 años - B</option>
+                                            <option value="4A">4 años - A</option>
+                                            <option value="4B">4 años - B</option>
+                                            <option value="4C">4 años - C</option>
+                                            <option value="5A">5 años - A</option>
+                                            <option value="5B">5 años - B</option>
+                                            <option value="5C">5 años - C</option>
+                                        </optgroup>
+                                        
+                                        <optgroup label="📚 PRIMARIA">
+                                            <option value="1PA">1° Primaria - A</option>
+                                            <option value="1PB">1° Primaria - B</option>
+                                            <option value="1PC">1° Primaria - C</option>
+                                            <option value="2PA">2° Primaria - A</option>
+                                            <option value="2PB">2° Primaria - B</option>
+                                            <option value="2PC">2° Primaria - C</option>
+                                            <option value="3PA">3° Primaria - A</option>
+                                            <option value="3PB">3° Primaria - B</option>
+                                            <option value="3PC">3° Primaria - C</option>
+                                            <option value="4PA">4° Primaria - A</option>
+                                            <option value="4PB">4° Primaria - B</option>
+                                            <option value="4PC">4° Primaria - C</option>
+                                            <option value="5PA">5° Primaria - A</option>
+                                            <option value="5PB">5° Primaria - B</option>
+                                            <option value="6PA">6° Primaria - A</option>
+                                            <option value="6PB">6° Primaria - B</option>
+                                        </optgroup>
+                                        
+                                        <optgroup label="🎓 SECUNDARIA">
+                                            <option value="1SA">1° Secundaria - A</option>
+                                            <option value="1SB">1° Secundaria - B</option>
+                                            <option value="1SC">1° Secundaria - C</option>
+                                            <option value="1SD">1° Secundaria - D</option>
+                                            <option value="2SA">2° Secundaria - A</option>
+                                            <option value="2SB">2° Secundaria - B</option>
+                                            <option value="2SC">2° Secundaria - C</option>
+                                            <option value="3SA">3° Secundaria - A</option>
+                                            <option value="3SB">3° Secundaria - B</option>
+                                            <option value="3SC">3° Secundaria - C</option>
+                                            <option value="4SA">4° Secundaria - A</option>
+                                            <option value="4SB">4° Secundaria - B</option>
+                                            <option value="5SA">5° Secundaria - A</option>
+                                            <option value="5SB">5° Secundaria - B</option>
+                                            <option value="5SC">5° Secundaria - C</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                             </div>
                             
-                            <div class="form-group">
-                                <label class="form-label">Tipo de Incidencia</label>
-                                <select class="form-input" required>
-                                    <option value="">Seleccionar tipo</option>
-                                    <option value="tardanza">Tardanza</option>
-                                    <option value="uniforme">Uniforme incompleto</option>
-                                    <option value="agenda">No porta agenda</option>
-                                    <option value="cabello">Cabello fuera de norma</option>
-                                    <option value="falta_respeto">Falta de respeto</option>
-                                    <option value="interrumpe">Interrumpe clase</option>
-                                    <option value="agresion_verbal">Agresión verbal</option>
-                                    <option value="agresion_fisica">Agresión física</option>
-                                </select>
+                            <!-- Selector de Tipo: Mérito o Demérito -->
+                            <div class="grid grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Tipo de Registro</label>
+                                    <select class="form-input" id="tipoRegistro" onchange="toggleMeritosDemeritosSections()" required>
+                                        <option value="">Seleccionar tipo</option>
+                                        <option value="merito">🏆 MÉRITO (Reconocimiento)</option>
+                                        <option value="demerito">⚠️ DEMÉRITO (Falta)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group" id="severidadInfo" style="display: none;">
+                                    <label class="form-label">Severidad (Automática)</label>
+                                    <div class="severity-info" id="severidadDisplay" style="padding: 8px; background: #f8f9fa; border-radius: 4px; color: #666;">
+                                        Se calcula automáticamente según el tipo y historial
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- SECCIÓN DE MÉRITOS -->
+                            <div id="meritosSection" class="form-section" style="display: none;">
+                                <h4 style="color: var(--color-ata-verde); margin: 20px 0 10px 0;"><i class="fas fa-star"></i> MÉRITOS - Seleccione el reconocimiento</h4>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Categoría y Mérito</label>
+                                    <select class="form-input" id="meritoSelect">
+                                        <option value="">Seleccionar mérito</option>
+                                        
+                                        <optgroup label="🎯 RESPONSABILIDAD">
+                                            <option value="RESP-A">A. Participación destacada en actos cívicos u otros eventos internos</option>
+                                            <option value="RESP-B">B. Mantiene adecuada presentación personal durante un mes</option>
+                                            <option value="RESP-C">C. Puntualidad y asistencia a actividades académicas</option>
+                                            <option value="RESP-D">D. Porta siempre su diario/agenda de comportamiento</option>
+                                            <option value="RESP-E">E. Cuida mobiliario e infraestructura</option>
+                                            <option value="RESP-F">F. Colabora espontáneamente con la limpieza del aula y el plantel</option>
+                                            <option value="RESP-G">G. Mantiene la agenda/diario en buen estado</option>
+                                            <option value="RESP-H">H. Cumple los compromisos establecidos</option>
+                                        </optgroup>
+                                        
+                                        <optgroup label="🤝 RESPETO">
+                                            <option value="RESP-I">I. Saluda con cortesía a miembros de la I.E. y adultos</option>
+                                            <option value="RESP-J">J. Respeta pertenencias de compañeros y devuelve objetos/dinero hallados</option>
+                                            <option value="RESP-K">K. Cuida infraestructura, áreas verdes, mobiliario y equipos</option>
+                                        </optgroup>
+                                        
+                                        <optgroup label="❤️ SOLIDARIDAD">
+                                            <option value="SOL-N">N. Participa en campañas de mejora institucional</option>
+                                            <option value="SOL-O">O. Participa responsablemente en actividades comunales</option>
+                                            <option value="SOL-P">P. Apoya a compañeros en dificultad</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- SECCIÓN DE DEMÉRITOS -->
+                            <div id="demeritosSection" class="form-section" style="display: none;">
+                                <h4 style="color: #dc3545; margin: 20px 0 10px 0;"><i class="fas fa-exclamation-triangle"></i> DEMÉRITOS - Seleccione la falta</h4>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Categoría y Falta</label>
+                                    <select class="form-input" id="demeritoSelect" onchange="updateSeverityInfo(); handleOtrasSelection();">
+                                        <option value="">Seleccionar falta</option>
+                                        
+                                        <!-- FALTAS LEVES -->
+                                        <optgroup label="🟡 FALTAS LEVES">
+                                            <optgroup label="    📅 ASISTENCIA">
+                                                <option value="LEVE-A" data-severity="leve">A. Inasistencia injustificada</option>
+                                                <option value="LEVE-B" data-severity="leve">B. Evadirse de la I.E. (salida no autorizada)</option>
+                                                <option value="LEVE-C" data-severity="leve">C. Llegar tarde a la I.E./aula o ingreso indebido</option>
+                                                <option value="LEVE-D" data-severity="leve">D. No ingresar a clase por permanecer en kiosco/baño/patio, etc.</option>
+                                            </optgroup>
+                                            <optgroup label="    📋 RESPONSABILIDAD">
+                                                <option value="LEVE-E" data-severity="leve">E. Incumple funciones asignadas (brigadier, delegado)</option>
+                                                <option value="LEVE-F" data-severity="leve">F. No cumple tareas educativas</option>
+                                                <option value="LEVE-G" data-severity="leve">G. Interrumpe al docente durante la sesión</option>
+                                                <option value="LEVE-H" data-severity="leve">H. Realiza trabajos ajenos en hora de clase</option>
+                                                <option value="LEVE-I" data-severity="leve">I. Fomenta desorden en ambientes/actividades de la I.E.</option>
+                                                <option value="LEVE-K" data-severity="leve">K. Juega pelota en aula o pasillos</option>
+                                                <option value="LEVE-L" data-severity="leve">L. Sale de clase sin autorización del docente</option>
+                                                <option value="LEVE-M" data-severity="leve">M. Cómplice en una falta</option>
+                                                <option value="LEVE-N" data-severity="leve">N. No porta la agenda/diario, la pierde o la conserva en mal estado</option>
+                                                <option value="LEVE-O" data-severity="leve">O. No hace firmar la agenda por el apoderado</option>
+                                                <option value="LEVE-P" data-severity="leve">P. Incumple normas y acuerdos de convivencia del aula</option>
+                                                <option value="LEVE-Q" data-severity="leve">Q. Otras que la autoridad indique</option>
+                                            </optgroup>
+                                            <optgroup label="    👔 IMAGEN PERSONAL">
+                                                <option value="LEVE-T" data-severity="leve">T. Uniforme incompleto o prendas ajenas al uniforme</option>
+                                                <option value="LEVE-U" data-severity="leve">U. Usa uniforme de E.F. fuera de su horario</option>
+                                                <option value="LEVE-V" data-severity="leve">V. Falta de higiene personal (cuello, cabello, uñas)</option>
+                                                <option value="LEVE-W" data-severity="leve">W. Cabello fuera de norma (varón sin recorte; mujer sin recogido)</option>
+                                                <option value="LEVE-X" data-severity="leve">X. Ingreso maquillado(a)</option>
+                                                <option value="LEVE-Y" data-severity="leve">Y. Uso de adornos (pulseras, aretes, gorros, etc.) no permitidos</option>
+                                            </optgroup>
+                                            <optgroup label="    🧹 LIMPIEZA">
+                                                <option value="LEVE-Z" data-severity="leve">Z. No colabora con la limpieza de ambientes (aula, patio, baños)</option>
+                                            </optgroup>
+                                            <optgroup label="    🤝 RESPETO - Relaciones">
+                                                <option value="LEVE-Ra" data-severity="leve">a. Agresión verbal o moral a compañeros (sin daño físico)</option>
+                                                <option value="LEVE-Rc" data-severity="leve">c. Vocabulario soez o descalificante</option>
+                                                <option value="LEVE-Re" data-severity="leve">e. No saluda a profesores/adultos</option>
+                                            </optgroup>
+                                            <optgroup label="    🇵🇪 CIUDADANÍA">
+                                                <option value="LEVE-Ca" data-severity="leve">a. No entona himnos con respeto</option>
+                                                <option value="LEVE-Cb" data-severity="leve">b. No participa y conversa en formaciones</option>
+                                                <option value="LEVE-Cc" data-severity="leve">c. No porta escarapela en aniversario patrio</option>
+                                            </optgroup>
+                                            <optgroup label="    🎭 HONRADEZ">
+                                                <option value="LEVE-Hb" data-severity="leve">b. Miente o calla para eludir responsabilidades o encubrir</option>
+                                            </optgroup>
+                                            <optgroup label="    💝 SOLIDARIDAD">
+                                                <option value="LEVE-Sa" data-severity="leve">a. Indiferencia ante campañas escolares</option>
+                                                <option value="LEVE-Sb" data-severity="leve">b. No presta ayuda cuando se solicita</option>
+                                            </optgroup>
+                                        </optgroup>
+                                        
+                                        <!-- FALTAS GRAVES -->
+                                        <optgroup label="🟠 FALTAS GRAVES">
+                                            <option value="GRAVE-a" data-severity="grave">a) Destruir propiedad ajena</option>
+                                            <option value="GRAVE-b" data-severity="grave">b) Deteriorar infraestructura, mobiliario o enseres de la I.E.</option>
+                                            <option value="GRAVE-c" data-severity="grave">c) Fraude en pruebas, trabajos o asignaciones</option>
+                                            <option value="GRAVE-d" data-severity="grave">d) Portar material pornográfico</option>
+                                            <option value="GRAVE-e" data-severity="grave">e) Falta de respeto grave a directivos, docentes, administrativos, personal de servicio, autoridades estudiantiles, compañeros o padres</option>
+                                            <option value="GRAVE-f" data-severity="grave">f) Evadirse de clase/I.E. o de actividades programadas</option>
+                                            <option value="GRAVE-g" data-severity="grave">g) Manchar paredes/puertas/sillas/pizarras con inscripciones</option>
+                                            <option value="GRAVE-h" data-severity="grave">h) Bullying o ciberbullying dentro de la I.E.</option>
+                                            <option value="GRAVE-i" data-severity="grave">i) Comentarios que dañen integridad/reputación de alumnos, personal o la I.E.</option>
+                                            <option value="GRAVE-j" data-severity="grave">j) Juegos de riesgo para la integridad física/emocional</option>
+                                            <optgroup label="    🎭 HONRADEZ - Graves">
+                                                <option value="GRAVE-Hc" data-severity="grave">c. Alterar calificaciones en exámenes/agenda/boleta</option>
+                                                <option value="GRAVE-Hd" data-severity="grave">d. Tomar pertenencias ajenas sin autorización (hurto)</option>
+                                                <option value="GRAVE-He" data-severity="grave">e. Copiar o filtrar claves en evaluaciones</option>
+                                            </optgroup>
+                                        </optgroup>
+                                        
+                                        <!-- FALTAS MUY GRAVES -->
+                                        <optgroup label="🔴 FALTAS MUY GRAVES">
+                                            <option value="MUY_GRAVE-a" data-severity="muy_grave">a) Fomentar violencia en la vía pública vistiendo el uniforme</option>
+                                            <option value="MUY_GRAVE-b" data-severity="muy_grave">b) Agresión física y/o psicológica a compañeros(as)</option>
+                                            <option value="MUY_GRAVE-c" data-severity="muy_grave">c) Portar/usar objetos punzocortantes o armas (reales o réplicas)</option>
+                                            <option value="MUY_GRAVE-d" data-severity="muy_grave">d) Inducir a otros a fraudes, delitos o peleas</option>
+                                            <option value="MUY_GRAVE-e" data-severity="muy_grave">e) Amenazar o agredir físicamente al personal de la I.E.</option>
+                                            <option value="MUY_GRAVE-f" data-severity="muy_grave">f) Usar el nombre de la I.E. en actividades sin autorización</option>
+                                            <option value="MUY_GRAVE-g" data-severity="muy_grave">g) Introducir/consumir drogas, cigarrillos o alcohol en la I.E. o portarlos con uniforme fuera de la I.E.</option>
+                                            <option value="MUY_GRAVE-h" data-severity="muy_grave">h) Portar celulares/cámaras para registrar y difundir contenido que vulnere derechos</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
                             </div>
                             
                             <div class="form-group">
                                 <label class="form-label">Descripción Detallada</label>
-                                <textarea class="form-input" style="min-height: 100px; resize: vertical;" placeholder="Describa la situación detalladamente..." required></textarea>
+                                <textarea class="form-input" id="descripcionDetallada" style="min-height: 100px; resize: vertical;" placeholder="Describa la situación detalladamente..." required></textarea>
                             </div>
                             
-                            <div class="grid grid-2">
-                                <div class="form-group">
-                                    <label class="form-label">Severidad</label>
-                                    <select class="form-input">
-                                        <option value="auto" selected>Automática (según tipo)</option>
-                                        <option value="leve">Leve</option>
-                                        <option value="grave">Grave</option>
-                                        <option value="muy_grave">Muy Grave</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label class="form-label">Testigos (opcional)</label>
-                                    <input type="text" class="form-input" placeholder="Nombres de testigos">
+                            <div class="form-group">
+                                <label class="form-label">Testigos (opcional)</label>
+                                <input type="text" class="form-input" id="testigos" placeholder="Nombres de testigos">
+                            </div>
+                            
+                            <!-- Información de Escalamiento (si aplica) -->
+                            <div id="escalamientoInfo" class="alert" style="display: none; margin-top: 15px;">
+                                <div class="alert-content">
+                                    <strong><i class="fas fa-info-circle"></i> Sistema de Escalamiento Automático:</strong>
+                                    <ul style="margin: 10px 0 0 20px; font-size: 14px;">
+                                        <li><strong>Faltas Leves:</strong> 3 en una semana → Alerta a tutor/padre | 5 en un bimestre → Citación TOE</li>
+                                        <li><strong>Faltas Graves/Muy Graves:</strong> Derivación inmediata a TOE/Dirección</li>
+                                    </ul>
                                 </div>
                             </div>
                             
@@ -3124,6 +3346,309 @@
                   '• Trimestral (detallado)\n' +
                   '• Anual (memoria institucional)\n\n' +
                   '🔧 Generador automático en desarrollo.');
+        }
+
+        // ==================== SISTEMA DE MÉRITOS Y DEMÉRITOS ====================
+        
+        // Base de datos simulada para historial de incidencias por estudiante
+        const studentIncidentHistory = {
+            // Simulando algunos estudiantes con historial
+            'ana_garcia_torres': [
+                { date: '2025-09-20', type: 'LEVE-C', severity: 'leve', description: 'Llegó tarde a clase' },
+                { date: '2025-09-18', type: 'LEVE-T', severity: 'leve', description: 'Uniforme incompleto' }
+            ],
+            'luis_morales_cruz': [
+                { date: '2025-09-19', type: 'LEVE-C', severity: 'leve', description: 'Tardanza reiterada' },
+                { date: '2025-09-17', type: 'LEVE-C', severity: 'leve', description: 'Llegó tarde nuevamente' },
+                { date: '2025-09-16', type: 'LEVE-C', severity: 'leve', description: 'Tercera tardanza esta semana' }
+            ]
+        };
+
+        // Toggle entre secciones de méritos y deméritos
+        function toggleMeritosDemeritosSections() {
+            const tipoRegistro = document.getElementById('tipoRegistro').value;
+            const meritosSection = document.getElementById('meritosSection');
+            const demeritosSection = document.getElementById('demeritosSection');
+            const severidadInfo = document.getElementById('severidadInfo');
+            const escalamientoInfo = document.getElementById('escalamientoInfo');
+            
+            // Reset de selecciones previas
+            document.getElementById('meritoSelect').selectedIndex = 0;
+            document.getElementById('demeritoSelect').selectedIndex = 0;
+            
+            if (tipoRegistro === 'merito') {
+                meritosSection.style.display = 'block';
+                demeritosSection.style.display = 'none';
+                severidadInfo.style.display = 'none';
+                escalamientoInfo.style.display = 'none';
+                document.getElementById('severidadDisplay').innerHTML = '✅ Los méritos no tienen severidad - son reconocimientos positivos';
+                document.getElementById('severidadDisplay').style.background = '#d4edda';
+                document.getElementById('severidadDisplay').style.color = '#155724';
+            } else if (tipoRegistro === 'demerito') {
+                meritosSection.style.display = 'none';
+                demeritosSection.style.display = 'block';
+                severidadInfo.style.display = 'block';
+                escalamientoInfo.style.display = 'block';
+                document.getElementById('severidadDisplay').innerHTML = 'Se calculará automáticamente según el tipo de falta y historial';
+                document.getElementById('severidadDisplay').style.background = '#f8f9fa';
+                document.getElementById('severidadDisplay').style.color = '#666';
+            } else {
+                meritosSection.style.display = 'none';
+                demeritosSection.style.display = 'none';
+                severidadInfo.style.display = 'none';
+                escalamientoInfo.style.display = 'none';
+            }
+        }
+
+        // Actualizar información de severidad automática
+        function updateSeverityInfo() {
+            const demeritoSelect = document.getElementById('demeritoSelect');
+            const selectedOption = demeritoSelect.options[demeritoSelect.selectedIndex];
+            const severidadDisplay = document.getElementById('severidadDisplay');
+            const studentName = document.getElementById('studentSearch').value.toLowerCase().replace(/\s+/g, '_');
+            
+            if (!selectedOption || !selectedOption.value) {
+                severidadDisplay.innerHTML = 'Se calculará automáticamente según el tipo de falta y historial';
+                severidadDisplay.style.background = '#f8f9fa';
+                severidadDisplay.style.color = '#666';
+                return;
+            }
+
+            const baseSeverity = selectedOption.getAttribute('data-severity');
+            const faltaCode = selectedOption.value;
+            
+            // Simular verificación de historial del estudiante
+            const studentHistory = studentIncidentHistory[studentName] || [];
+            const currentWeekIncidents = countIncidentsInCurrentWeek(studentHistory);
+            const currentBimesterIncidents = countIncidentsInCurrentBimester(studentHistory);
+            
+            let finalSeverity = baseSeverity;
+            let escalationInfo = '';
+            let alertStyle = '';
+
+            if (baseSeverity === 'leve') {
+                // Aplicar reglas de escalamiento para faltas leves
+                if (currentWeekIncidents >= 2) {
+                    // Ya tiene 2+ faltas esta semana, la siguiente sería la 3ra (Alerta)
+                    finalSeverity = 'alerta';
+                    escalationInfo = '⚠️ ESCALAMIENTO: 3+ faltas leves en una semana → ALERTA A TUTOR/PADRE';
+                    alertStyle = 'background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;';
+                } else if (currentBimesterIncidents >= 4) {
+                    // Ya tiene 4+ faltas este bimestre, la siguiente sería la 5ta (TOE)
+                    finalSeverity = 'toe';
+                    escalationInfo = '🚨 ESCALAMIENTO: 5+ faltas leves en bimestre → CITACIÓN FORMAL EN TOE';
+                    alertStyle = 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;';
+                } else {
+                    escalationInfo = `📊 Historial: ${currentWeekIncidents} falta(s) esta semana, ${currentBimesterIncidents} este bimestre`;
+                    alertStyle = 'background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;';
+                }
+            } else if (baseSeverity === 'grave' || baseSeverity === 'muy_grave') {
+                escalationInfo = '🔴 DERIVACIÓN INMEDIATA A TOE/DIRECCIÓN (sin esperar conteos)';
+                alertStyle = 'background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; font-weight: bold;';
+            }
+
+            // Mostrar información de severidad final
+            let severityColor = getSeverityColor(finalSeverity);
+            let severityLabel = getSeverityLabel(finalSeverity);
+            
+            severidadDisplay.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="background: ${severityColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                        ${severityLabel.toUpperCase()}
+                    </span>
+                    <span>${escalationInfo}</span>
+                </div>
+            `;
+            severidadDisplay.style.cssText = alertStyle + ' padding: 12px; border-radius: 6px;';
+        }
+
+        // Funciones auxiliares para conteo de incidencias
+        function countIncidentsInCurrentWeek(history) {
+            const now = new Date();
+            const currentWeekStart = new Date(now);
+            currentWeekStart.setDate(now.getDate() - now.getDay()); // Inicio de semana (domingo)
+            
+            return history.filter(incident => {
+                const incidentDate = new Date(incident.date);
+                return incidentDate >= currentWeekStart && incident.severity === 'leve';
+            }).length;
+        }
+
+        function countIncidentsInCurrentBimester(history) {
+            const now = new Date();
+            const currentBimesterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 2) * 2, 1);
+            
+            return history.filter(incident => {
+                const incidentDate = new Date(incident.date);
+                return incidentDate >= currentBimesterStart && incident.severity === 'leve';
+            }).length;
+        }
+
+        function getSeverityColor(severity) {
+            const colors = {
+                'leve': '#28a745',
+                'alerta': '#ffc107',
+                'toe': '#fd7e14',
+                'grave': '#dc3545',
+                'muy_grave': '#6f42c1'
+            };
+            return colors[severity] || '#6c757d';
+        }
+
+        function getSeverityLabel(severity) {
+            const labels = {
+                'leve': 'Leve',
+                'alerta': 'Alerta - Tutor',
+                'toe': 'TOE - Citación',
+                'grave': 'Grave',
+                'muy_grave': 'Muy Grave'
+            };
+            return labels[severity] || 'No definida';
+        }
+
+        // Manejar selección de "Otras que la autoridad indique"
+        function handleOtrasSelection() {
+            const demeritoSelect = document.getElementById('demeritoSelect');
+            const selectedOption = demeritoSelect.options[demeritoSelect.selectedIndex];
+            const descripcionTextarea = document.getElementById('descripcionDetallada');
+            
+            // Si se seleccionó "Q. Otras que la autoridad indique", enfocar en descripción
+            if (selectedOption && selectedOption.value === 'LEVE-Q') {
+                setTimeout(() => {
+                    descripcionTextarea.focus();
+                    descripcionTextarea.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    
+                    // Cambiar el placeholder para dar más contexto
+                    descripcionTextarea.placeholder = '📝 Describa detalladamente la otra falta cometida por el estudiante (especifique qué norma o acuerdo incumplió)...';
+                    
+                    // Agregar un efecto visual temporal
+                    descripcionTextarea.style.border = '2px solid var(--color-ata-dorado)';
+                    descripcionTextarea.style.boxShadow = '0 0 10px rgba(255, 193, 7, 0.3)';
+                    
+                    setTimeout(() => {
+                        descripcionTextarea.style.border = '2px solid #e9ecef';
+                        descripcionTextarea.style.boxShadow = 'none';
+                    }, 2000);
+                }, 100);
+            } else {
+                // Restablecer el placeholder original
+                descripcionTextarea.placeholder = 'Describa la situación detalladamente...';
+            }
+        }
+
+        // Procesar envío del formulario de incidencia
+        function submitIncident(event) {
+            event.preventDefault();
+            
+            const tipoRegistro = document.getElementById('tipoRegistro').value;
+            const estudiante = document.getElementById('studentSearch').value;
+            const aula = document.getElementById('aulaSelect').value;
+            const descripcion = document.getElementById('descripcionDetallada').value;
+            const testigos = document.getElementById('testigos').value;
+            
+            let incidentData = {
+                fecha: new Date().toISOString().split('T')[0],
+                estudiante: estudiante,
+                aula: aula,
+                descripcion: descripcion,
+                testigos: testigos,
+                registradoPor: currentUser?.name || 'Usuario desconocido'
+            };
+
+            if (tipoRegistro === 'merito') {
+                const merito = document.getElementById('meritoSelect').value;
+                if (!merito) {
+                    alert('Por favor seleccione un mérito');
+                    return;
+                }
+                incidentData.tipo = 'merito';
+                incidentData.codigo = merito;
+                incidentData.severidad = 'reconocimiento';
+                
+                alert(`✅ MÉRITO REGISTRADO EXITOSAMENTE\n\n` +
+                      `👨‍🎓 Estudiante: ${estudiante}\n` +
+                      `🏫 Aula: ${aula}\n` +
+                      `🏆 Mérito: ${document.getElementById('meritoSelect').options[document.getElementById('meritoSelect').selectedIndex].text}\n\n` +
+                      `📝 Este reconocimiento será registrado en el expediente del estudiante y podrá ser considerado para:\n` +
+                      `• Carta de felicitación de Dirección\n` +
+                      `• Mención pública\n` +
+                      `• Diploma de reconocimiento\n\n` +
+                      `✅ El padre de familia será notificado del reconocimiento.`);
+                      
+            } else if (tipoRegistro === 'demerito') {
+                const demerito = document.getElementById('demeritoSelect').value;
+                if (!demerito) {
+                    alert('Por favor seleccione una falta');
+                    return;
+                }
+                
+                const selectedOption = document.getElementById('demeritoSelect').options[document.getElementById('demeritoSelect').selectedIndex];
+                const baseSeverity = selectedOption.getAttribute('data-severity');
+                
+                // Calcular severidad final automáticamente
+                const studentName = estudiante.toLowerCase().replace(/\s+/g, '_');
+                const studentHistory = studentIncidentHistory[studentName] || [];
+                const currentWeekIncidents = countIncidentsInCurrentWeek(studentHistory);
+                const currentBimesterIncidents = countIncidentsInCurrentBimester(studentHistory);
+                
+                let finalSeverity = baseSeverity;
+                let actionRequired = '';
+                
+                if (baseSeverity === 'leve') {
+                    if (currentWeekIncidents >= 2) {
+                        finalSeverity = 'alerta';
+                        actionRequired = 'ALERTA A TUTOR/PADRE - Llamada inmediata';
+                    } else if (currentBimesterIncidents >= 4) {
+                        finalSeverity = 'toe';
+                        actionRequired = 'CITACIÓN FORMAL EN TOE';
+                    } else {
+                        actionRequired = 'Amonestación verbal + anotación en agenda + firma del padre';
+                    }
+                } else if (baseSeverity === 'grave') {
+                    actionRequired = 'Citación formal del apoderado en TOE + acta de compromiso';
+                } else if (baseSeverity === 'muy_grave') {
+                    actionRequired = 'Atención inmediata en TOE/DIRECCIÓN + citación urgente + activar protocolos';
+                }
+                
+                incidentData.tipo = 'demerito';
+                incidentData.codigo = demerito;
+                incidentData.severidad = finalSeverity;
+                incidentData.accionRequerida = actionRequired;
+                
+                // Actualizar historial simulado del estudiante
+                if (!studentIncidentHistory[studentName]) {
+                    studentIncidentHistory[studentName] = [];
+                }
+                studentIncidentHistory[studentName].push({
+                    date: incidentData.fecha,
+                    type: demerito,
+                    severity: baseSeverity,
+                    description: descripcion.substring(0, 50) + '...'
+                });
+                
+                alert(`⚠️ DEMÉRITO REGISTRADO EXITOSAMENTE\n\n` +
+                      `👨‍🎓 Estudiante: ${estudiante}\n` +
+                      `🏫 Aula: ${aula}\n` +
+                      `❌ Falta: ${selectedOption.text}\n` +
+                      `📊 Severidad Final: ${getSeverityLabel(finalSeverity).toUpperCase()}\n\n` +
+                      `🚨 ACCIÓN REQUERIDA:\n${actionRequired}\n\n` +
+                      `📋 FLUJO SIGUIENTE:\n` +
+                      `1. Notificación automática al padre\n` +
+                      `2. ${finalSeverity === 'leve' ? 'Registro en agenda del estudiante' : 'Derivación según protocolo'}\n` +
+                      `3. Seguimiento por ${finalSeverity.includes('toe') || finalSeverity === 'grave' || finalSeverity === 'muy_grave' ? 'TOE/Dirección' : 'Tutor de aula'}`);
+            }
+            
+            // Reset del formulario
+            document.getElementById('incidenciaForm').reset();
+            toggleMeritosDemeritosSections();
+            
+            // Volver al dashboard
+            setTimeout(() => {
+                showSection('dashboard');
+            }, 2000);
         }
 
         // ==================== FUNCIONES ADMINISTRATIVAS ADICIONALES ====================
