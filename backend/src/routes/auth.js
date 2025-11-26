@@ -17,22 +17,63 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(6, 'La nueva contraseña debe tener al menos 6 caracteres')
 });
 
+const verificarUsuarioSchema = z.object({
+  dni: z.string().length(8, 'DNI debe tener 8 dígitos'),
+  nombre_completo: z.string().min(1, 'Nombre completo requerido')
+});
+
+const activarCuentaSchema = z.object({
+  dni: z.string().length(8, 'DNI debe tener 8 dígitos'),
+  nombre_completo: z.string().min(1, 'Nombre completo requerido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  confirmar_password: z.string().min(6, 'Confirmar contraseña es requerida'),
+  email: z.string().email('Email inválido').optional().nullable(),
+  telefono: z.string().optional().nullable()
+}).refine((data) => data.password === data.confirmar_password, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmar_password']
+});
+
+const solicitarRegistroSchema = z.object({
+  dni: z.string().length(8, 'DNI debe tener 8 dígitos'),
+  nombre_completo: z.string().min(1, 'Nombre completo requerido'),
+  email: z.string().email('Email inválido').optional(),
+  telefono: z.string().optional(),
+  rol: z.enum(['docente', 'tutor', 'auxiliar', 'direccion', 'toe', 'padre']),
+  mensaje: z.string().optional()
+});
+
 // Login
 auth.post('/login', async (c) => {
   try {
     const body = await c.req.json();
     const { usuario, password } = loginSchema.parse(body);
     
-    // Buscar usuario
-    const { data: user, error } = await supabase(c.env)
-      .from('usuarios')
+    // Buscar usuario por DNI o email
+    let query = supabase(c.env)
+      .from('users')
       .select('*')
-      .eq('usuario', usuario)
-      .eq('activo', true)
-      .single();
+      .eq('activo', true);
+    
+    // Intentar por DNI primero, luego por email
+    if (usuario.length === 8 && /^\d+$/.test(usuario)) {
+      query = query.eq('dni', usuario);
+    } else {
+      query = query.eq('email', usuario);
+    }
+    
+    const { data: user, error } = await query.single();
     
     if (error || !user) {
       return c.json({ error: 'Credenciales inválidas' }, 401);
+    }
+    
+    // Verificar que la cuenta esté activada
+    if (!user.activado) {
+      return c.json({ 
+        error: 'Cuenta no activada. Por favor, activa tu cuenta primero.',
+        requireActivation: true 
+      }, 403);
     }
     
     // Verificar contraseña
@@ -46,8 +87,9 @@ auth.post('/login', async (c) => {
     const token = jwt.sign(
       { 
         userId: user.id, 
-        usuario: user.usuario, 
-        rol: user.rol 
+        dni: user.dni,
+        email: user.email,
+        role: user.role 
       },
       c.env.JWT_SECRET,
       { expiresIn: '24h' }
@@ -55,10 +97,9 @@ auth.post('/login', async (c) => {
     
     // Actualizar último acceso
     await supabase(c.env)
-      .from('usuarios')
+      .from('users')
       .update({ 
-        ultimo_acceso: new Date().toISOString(),
-        fecha_modificacion: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('id', user.id);
     
@@ -178,6 +219,212 @@ auth.post('/change-password', async (c) => {
     }
     
     console.error('Error al cambiar contraseña:', error);
+    return c.json({ error: 'Error interno del servidor' }, 500);
+  }
+});
+
+// Verificar usuario existente en BD (primer paso de activación)
+auth.post('/verificar-usuario', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { dni, nombre_completo } = verificarUsuarioSchema.parse(body);
+    
+    // Normalizar nombre (mayúsculas, sin tildes)
+    const nombreNormalizado = nombre_completo.toUpperCase().trim();
+    
+    // Buscar usuario por DNI y nombre
+    const { data: user, error } = await supabase(c.env)
+      .from('users')
+      .select('id, dni, nombre_completo, email, role, activado, activo')
+      .eq('dni', dni)
+      .eq('activo', true)
+      .single();
+    
+    if (error || !user) {
+      return c.json({ 
+        existe: false,
+        message: 'No estás registrado en el sistema. Por favor, solicita al administrador tu registro.'
+      }, 404);
+    }
+    
+    // Verificar que el nombre coincida (comparación flexible)
+    const nombreBD = user.nombre_completo.toUpperCase().trim();
+    if (nombreBD !== nombreNormalizado) {
+      return c.json({ 
+        existe: false,
+        message: 'Los datos no coinciden con nuestros registros. Verifica tu nombre completo.'
+      }, 404);
+    }
+    
+    // Verificar si ya fue activada
+    if (user.activado) {
+      return c.json({ 
+        existe: true,
+        yaActivado: true,
+        message: 'Esta cuenta ya fue activada. Por favor, inicia sesión.'
+      }, 200);
+    }
+    
+    // Usuario existe y no ha sido activado
+    return c.json({
+      existe: true,
+      yaActivado: false,
+      user: {
+        dni: user.dni,
+        nombre_completo: user.nombre_completo,
+        email: user.email,
+        role: user.role
+      },
+      message: 'Usuario verificado. Procede a configurar tu contraseña.'
+    }, 200);
+    
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ 
+        error: 'Datos inválidos', 
+        details: error.errors 
+      }, 400);
+    }
+    
+    console.error('Error al verificar usuario:', error);
+    return c.json({ error: 'Error interno del servidor' }, 500);
+  }
+});
+
+// Activar cuenta (establecer contraseña por primera vez)
+auth.post('/activar-cuenta', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { dni, nombre_completo, password, confirmar_password, email, telefono } = activarCuentaSchema.parse(body);
+    
+    // Normalizar nombre
+    const nombreNormalizado = nombre_completo.toUpperCase().trim();
+    
+    // Buscar usuario por DNI y nombre
+    const { data: user, error } = await supabase(c.env)
+      .from('users')
+      .select('*')
+      .eq('dni', dni)
+      .eq('activo', true)
+      .single();
+    
+    if (error || !user) {
+      return c.json({ 
+        error: 'Usuario no encontrado o inactivo'
+      }, 404);
+    }
+    
+    // Verificar nombre
+    const nombreBD = user.nombre_completo.toUpperCase().trim();
+    if (nombreBD !== nombreNormalizado) {
+      return c.json({ 
+        error: 'Los datos no coinciden con nuestros registros'
+      }, 400);
+    }
+    
+    // Verificar si ya fue activada
+    if (user.activado) {
+      return c.json({ 
+        error: 'Esta cuenta ya fue activada previamente'
+      }, 400);
+    }
+    
+    // Hash de la contraseña
+    const saltRounds = 12;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+    
+    // Preparar campos a actualizar
+    const updateData = {
+      password_hash: passwordHash,
+      activado: true,
+      updated_at: new Date().toISOString()
+    };
+
+    // Actualizar email si se proporcionó y está vacío en BD
+    if (email && !user.email) {
+      updateData.email = email;
+    }
+
+    // Actualizar teléfono si se proporcionó y está vacío en BD
+    if (telefono && !user.telefono) {
+      updateData.telefono = telefono;
+    }
+
+    // Actualizar usuario: establecer contraseña, marcar como activado y rellenar datos faltantes
+    const { error: updateError } = await supabase(c.env)
+      .from('users')
+      .update(updateData)
+      .eq('id', user.id);
+    
+    if (updateError) {
+      throw updateError;
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Cuenta activada correctamente. Ya puedes iniciar sesión.',
+      user: {
+        dni: user.dni,
+        nombre_completo: user.nombre_completo,
+        role: user.role
+      }
+    }, 201);
+    
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ 
+        error: 'Datos inválidos', 
+        details: error.errors 
+      }, 400);
+    }
+    
+    console.error('Error al activar cuenta:', error);
+    return c.json({ error: 'Error interno del servidor' }, 500);
+  }
+});
+
+// Solicitar registro (para usuarios que no están en la BD)
+auth.post('/solicitar-registro', async (c) => {
+  try {
+    const body = await c.req.json();
+    const validatedData = solicitarRegistroSchema.parse(body);
+    
+    // Verificar que no exista ya
+    const { data: existingUser } = await supabase(c.env)
+      .from('users')
+      .select('id')
+      .eq('dni', validatedData.dni)
+      .single();
+    
+    if (existingUser) {
+      return c.json({ 
+        error: 'Ya existe un usuario con este DNI. Intenta activar tu cuenta.'
+      }, 400);
+    }
+    
+    // Guardar solicitud en tabla de solicitudes_registro (si existe)
+    // Por ahora, podríamos enviar un email al administrador o guardar en otra tabla
+    // Implementación futura: tabla 'solicitudes_registro'
+    
+    return c.json({
+      success: true,
+      message: 'Solicitud enviada correctamente. El administrador revisará tu solicitud pronto.',
+      data: {
+        dni: validatedData.dni,
+        nombre_completo: validatedData.nombre_completo,
+        rol: validatedData.rol
+      }
+    }, 201);
+    
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return c.json({ 
+        error: 'Datos inválidos', 
+        details: error.errors 
+      }, 400);
+    }
+    
+    console.error('Error al solicitar registro:', error);
     return c.json({ error: 'Error interno del servidor' }, 500);
   }
 });

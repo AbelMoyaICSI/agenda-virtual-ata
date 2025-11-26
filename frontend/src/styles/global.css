@@ -1,0 +1,443 @@
+/* ============================================================================
+   ESTILOS GLOBALES - AGENDA VIRTUAL ATA
+   Colores institucionales I.E. 80002 Antonio Torres Araujo
+   ============================================================================ */
+
+/* Variables CSS con colores institucionales ATA */
+:root {
+    --color-ata-verde: #006B3F;
+    --color-ata-verde-claro: #4CAF50;
+    --color-ata-rojo: #C1272D;
+    --color-ata-rojo-claro: #F44336;
+    --color-ata-dorado: #FFD700;
+    --color-ata-azul: #1E90FF;
+    --color-ata-negro: #2C3E50;
+    --color-ata-gris: #7F8C8D;
+    --color-ata-gris-claro: #ECF0F1;
+    
+    /* Sombras */
+    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.2);
+    
+    /* Fuentes */
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Reset y base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: #f8f9fa;
+    color: var(--color-ata-negro);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Login Screen */
+.login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--color-ata-verde) 0%, var(--color-ata-azul) 100%);
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-heavy);
+    width: 100%;
+    max-width: 500px;
+    max-height: 95vh;
+    text-align: center;
+    overflow-y: auto;
+    position: relative;
+}
+
+.login-card::-webkit-scrollbar {
+    width: 6px;
+}
+
+.login-card::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.login-card::-webkit-scrollbar-thumb {
+    background: var(--color-ata-verde);
+    border-radius: 3px;
+}
+
+.login-logo {
+    width: 120px;
+    height: 120px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    padding: 15px;
+    box-shadow: var(--shadow-medium);
+}
+
+.login-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.login-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--color-ata-negro);
+    margin-bottom: 10px;
+}
+
+.login-subtitle {
+    color: var(--color-ata-gris);
+    margin-bottom: 30px;
+    font-size: 16px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--color-ata-negro);
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-ata-verde);
+    box-shadow: 0 0 0 3px rgba(0, 107, 63, 0.1);
+}
+
+.password-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--color-ata-gris);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    z-index: 10;
+    transition: color 0.3s ease;
+}
+
+.password-toggle:hover {
+    color: var(--color-ata-verde);
+}
+
+.password-input {
+    padding-right: 45px;
+}
+
+.role-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.role-btn {
+    padding: 15px 10px;
+    border: 2px solid #e9ecef;
+    background: #ffffff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-ata-gris);
+}
+
+.role-btn:hover {
+    border-color: var(--color-ata-verde);
+    background: #f8f9fa;
+    color: var(--color-ata-verde);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 107, 63, 0.15);
+}
+
+.role-btn.selected {
+    border-color: var(--color-ata-verde);
+    background: var(--color-ata-verde);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 107, 63, 0.25);
+}
+
+.step-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-ata-verde);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.btn-primary {
+    background: var(--color-ata-verde);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--color-ata-verde-claro);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.btn-secondary {
+    background: var(--color-ata-azul);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #0066CC;
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background: var(--color-ata-dorado);
+    color: var(--color-ata-negro);
+}
+
+.btn-warning:hover {
+    background: #FFC107;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: var(--color-ata-rojo);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--color-ata-rojo-claro);
+    transform: translateY(-2px);
+}
+
+.alert {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.alert-danger {
+    background: #ffebee;
+    color: #c62828;
+    border-left-color: var(--color-ata-rojo);
+}
+
+.alert-success {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border-left-color: var(--color-ata-verde);
+}
+
+.alert-info {
+    background: #e3f2fd;
+    color: #1565c0;
+    border-left-color: var(--color-ata-azul);
+}
+
+.alert-warning {
+    background: #fff9e6;
+    color: #f57f17;
+    border-left-color: var(--color-ata-dorado);
+}
+
+/* Step Indicator */
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 25px 0;
+    gap: 10px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.step-circle.active {
+    background: var(--color-ata-verde);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 107, 63, 0.3);
+}
+
+.step-circle.completed {
+    background: var(--color-ata-verde-claro);
+    color: white;
+}
+
+.step-line {
+    width: 40px;
+    height: 2px;
+    background: #e9ecef;
+}
+
+.step-line.active {
+    background: var(--color-ata-verde);
+}
+
+.step-label {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.step-label.active {
+    color: var(--color-ata-verde);
+    font-weight: 600;
+}
+
+/* Password Strength */
+.password-strength {
+    margin-top: 8px;
+}
+
+.strength-bar {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-bar-fill.weak {
+    width: 33%;
+    background: var(--color-ata-rojo);
+}
+
+.strength-bar-fill.medium {
+    width: 66%;
+    background: var(--color-ata-dorado);
+}
+
+.strength-bar-fill.strong {
+    width: 100%;
+    background: var(--color-ata-verde);
+}
+
+.strength-text {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.strength-text.weak {
+    color: var(--color-ata-rojo);
+}
+
+.strength-text.medium {
+    color: #f57f17;
+}
+
+.strength-text.strong {
+    color: var(--color-ata-verde);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .login-card {
+        padding: 30px 20px;
+        max-width: 95%;
+    }
+
+    .login-logo {
+        width: 100px;
+        height: 100px;
+        padding: 12px;
+    }
+
+    .role-selection {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .step-indicator {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .step-line {
+        width: 2px;
+        height: 20px;
+    }
+}

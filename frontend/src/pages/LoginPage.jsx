@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { login } from '../services/authService';
 
 const LoginPage = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     usuario: '',
     password: ''
@@ -10,23 +13,12 @@ const LoginPage = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Usuarios de prueba (en producción vendrían de la API)
-  const usuariosPrueba = [
-    { usuario: 'docente01', password: '123456', nombre: 'María González', rol: 'docente', aula: '3°A' },
-    { usuario: 'auxiliar01', password: '123456', nombre: 'Carlos Ruiz', rol: 'auxiliar', area: 'Ingreso' },
-    { usuario: 'tutor01', password: '123456', nombre: 'Ana Pérez', rol: 'tutor', aula: '1°B' },
-    { usuario: 'toe01', password: '123456', nombre: 'Luis Morales', rol: 'toe', area: 'TOE' },
-    { usuario: 'direccion', password: '123456', nombre: 'Rosa Villareal', rol: 'direccion', cargo: 'Directora' },
-    { usuario: 'padre01', password: '123456', nombre: 'Juan Martínez', rol: 'padre', hijo: 'Pedro Martínez' }
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Limpiar error al escribir
     if (error) setError('');
   };
 
@@ -35,46 +27,67 @@ const LoginPage = ({ onLogin }) => {
     setIsLoading(true);
     setError('');
 
-    // Simular llamada a API
-    setTimeout(() => {
-      const user = usuariosPrueba.find(u => 
-        u.usuario === formData.usuario && u.password === formData.password
-      );
+    try {
+      const { user, error: loginError } = await login(formData.usuario, formData.password);
+
+      if (loginError) {
+        setError(loginError);
+        setIsLoading(false);
+        return;
+      }
 
       if (user) {
-        onLogin({
-          id: user.usuario,
-          nombre: user.nombre,
-          rol: user.rol,
-          aula: user.aula,
-          area: user.area,
-          cargo: user.cargo,
-          hijo: user.hijo
-        });
+        onLogin(user);
       } else {
         setError('Usuario o contraseña incorrectos');
+        setIsLoading(false);
       }
-      
+    } catch (err) {
+      console.error('Error en login:', err);
+      setError('Error al iniciar sesión. Intenta nuevamente.');
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
+  const handleActivarCuenta = () => {
+    navigate('/activar-cuenta');
+  };
+
+  const handleSolicitarRegistro = () => {
+    navigate('/solicitar-registro');
+  };
+
+  // Pantalla de login
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-ata-verde to-ata-azul p-4">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-6">
         {/* Logo y título */}
         <div className="text-center">
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-ata-verde font-black text-2xl">ATA</span>
+            <img 
+              src="/assets/images/logo-ata.png" 
+              alt="I.E. Antonio Torres Araujo" 
+              className="w-16 h-16 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'block';
+              }}
+            />
+            <span 
+              className="text-ata-verde font-black text-2xl"
+              style={{ display: 'none' }}
+            >
+              ATA
+            </span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
-            Agenda Virtual
+            Agenda Virtual ATA
           </h1>
           <p className="text-white opacity-90 text-lg">
             I.E. 80002 Antonio Torres Araujo
           </p>
-          <p className="text-white opacity-75 text-sm mt-2">
-            Sistema de Gestión de Incidencias Escolares
+          <p className="text-white opacity-75 text-sm mt-1">
+            Sistema de Gestión de Incidencias
           </p>
         </div>
 
@@ -83,7 +96,7 @@ const LoginPage = ({ onLogin }) => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="form-label text-ata-negro">
-                Usuario
+                DNI o Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -95,9 +108,10 @@ const LoginPage = ({ onLogin }) => {
                   value={formData.usuario}
                   onChange={handleChange}
                   className="form-input pl-10"
-                  placeholder="Ingresa tu usuario"
+                  placeholder="DNI (8 dígitos) o email"
                   required
                   disabled={isLoading}
+                  autoFocus
                 />
               </div>
             </div>
@@ -158,19 +172,35 @@ const LoginPage = ({ onLogin }) => {
             </button>
           </form>
 
-          {/* Usuarios de prueba */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-bold text-gray-700 mb-3">
-              Usuarios de Prueba:
-            </h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <div><strong>Docente:</strong> docente01 / 123456</div>
-              <div><strong>Auxiliar:</strong> auxiliar01 / 123456</div>
-              <div><strong>Tutor:</strong> tutor01 / 123456</div>
-              <div><strong>TOE:</strong> toe01 / 123456</div>
-              <div><strong>Dirección:</strong> direccion / 123456</div>
-              <div><strong>Padre:</strong> padre01 / 123456</div>
+          {/* Separador */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
             </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">¿Primera vez?</span>
+            </div>
+          </div>
+
+          {/* Botones adicionales */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleActivarCuenta}
+              className="w-full py-3 px-4 border-2 border-ata-verde text-ata-verde rounded-lg hover:bg-green-50 transition-colors font-semibold flex items-center justify-center gap-2"
+            >
+              <span>🔓</span>
+              Activar mi Cuenta
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSolicitarRegistro}
+              className="w-full py-3 px-4 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold flex items-center justify-center gap-2"
+            >
+              <span>📝</span>
+              Solicitar Registro
+            </button>
           </div>
         </div>
 

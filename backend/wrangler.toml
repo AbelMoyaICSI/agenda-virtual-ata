@@ -13,7 +13,7 @@ SUPABASE_SERVICE_KEY = "tu_supabase_service_key_aqui"
 ENVIRONMENT = "production"
 # Las variables de producción se configuran via wrangler secret put
 
-# CORS
-[[routes]]
-pattern = "*"
-custom_domain = true
+# CORS (solo para producción)
+# [[routes]]
+# pattern = "*"
+# custom_domain = true

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { supabase, onAuthStateChange } from './config/supabase';
+import { getUserData } from './services/authService';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import Loading from './components/common/Loading';
@@ -10,43 +12,64 @@ import DashboardPage from './pages/DashboardPage';
 import IncidenciaPage from './pages/IncidenciaPage';
 import HistorialPage from './pages/HistorialPage';
 import ReportesPage from './pages/ReportesPage';
-import ReportesPage from './pages/ReportesPage';
+import ActivarCuentaPage from './pages/ActivarCuentaPage';
+import SolicitarRegistroPage from './pages/SolicitarRegistroPage';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Simulación de verificación de sesión al cargar
+  // ✅ SUPABASE AUTH (reemplaza localStorage)
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const userData = localStorage.getItem('agenda_ata_user');
-        if (userData) {
-          setUser(JSON.parse(userData));
-        }
-      } catch (error) {
-        console.error('Error al verificar autenticación:', error);
-        localStorage.removeItem('agenda_ata_user');
-      } finally {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserData(session.user.id);
+      } else {
         setIsLoading(false);
       }
-    };
+    });
 
-    // Simular carga inicial
-    setTimeout(checkAuth, 1000);
+    const subscription = onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserData(session.user.id);
+      } else {
+        setUser(null);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const loadUserData = async (userId) => {
+    try {
+      const userData = await getUserData(userId);
+      setUser(userData);
+    } catch (error) {
+      console.error('Error al cargar datos del usuario:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('agenda_ata_user', JSON.stringify(userData));
     navigate('/dashboard');
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('agenda_ata_user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
 
   // Componente para rutas protegidas
@@ -98,6 +121,30 @@ function App() {
                 <Navigate to="/dashboard" replace />
               ) : (
                 <LoginPage onLogin={handleLogin} />
+              )
+            } 
+          />
+
+          {/* Activar Cuenta */}
+          <Route 
+            path="/activar-cuenta" 
+            element={
+              user ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <ActivarCuentaPage />
+              )
+            } 
+          />
+
+          {/* Solicitar Registro */}
+          <Route 
+            path="/solicitar-registro" 
+            element={
+              user ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <SolicitarRegistroPage />
               )
             } 
           />

@@ -1,5 +1,77 @@
 /* Estilos específicos para componentes del sistema */
 
+/* === INDICADOR DE PASOS === */
+.steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.step-number {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #999;
+  background-color: white;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+  background-color: var(--color-ata-verde);
+  border-color: var(--color-ata-verde);
+  color: white;
+}
+
+.step.completed .step-number {
+  background-color: var(--color-ata-verde);
+  border-color: var(--color-ata-verde);
+  color: white;
+}
+
+.step.completed .step-number::after {
+  content: '✓';
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: #999;
+  font-weight: 500;
+  text-align: center;
+}
+
+.step.active .step-label {
+  color: var(--color-ata-verde);
+  font-weight: 600;
+}
+
+.step.completed .step-label {
+  color: var(--color-ata-verde);
+}
+
+.step-divider {
+  width: 50px;
+  height: 2px;
+  background-color: #ddd;
+  margin: 0 10px;
+}
+
+.step.completed + .step-divider {
+  background-color: var(--color-ata-verde);
+}
+
 /* === BOTONES INSTITUCIONALES === */
 .btn-primary {
   background-color: var(--color-ata-verde);
