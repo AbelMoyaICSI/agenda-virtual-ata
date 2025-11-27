@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -267,6 +267,61 @@
             color: #6c757d;
             background: transparent;
             pointer-events: none;
+        }
+
+        /* Estilos para autocompletado de búsqueda */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--color-ata-verde);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:hover {
+            background: #e8f5e9;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item .student-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .autocomplete-item .student-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .autocomplete-loading {
+            padding: 15px;
+            text-align: center;
+            color: #666;
+        }
+
+        .autocomplete-empty {
+            padding: 15px;
+            text-align: center;
+            color: #999;
+            font-style: italic;
         }
 
         .input-group-icon i {
@@ -771,79 +826,7 @@
             font-size: 12px;
         }
 
-        /* Banner Demo - Etiqueta flotante discreta en esquina inferior */
-        .demo-banner {
-            display: none;
-            background: linear-gradient(135deg, #ff9500, #ff6b1a);
-            color: white;
-            padding: 0;
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: auto;
-            max-width: 220px;
-            border-radius: 25px;
-            box-shadow: 0 6px 25px rgba(255, 149, 0, 0.4);
-            z-index: 950;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.5s ease-out;
-        }
-
-        .demo-banner.show {
-            transform: translateY(0);
-            opacity: 0.95;
-        }
-
-        .demo-banner:hover {
-            opacity: 1;
-            transform: translateY(-3px) scale(1.03);
-            box-shadow: 0 8px 30px rgba(255, 149, 0, 0.5);
-        }
-
-        .demo-banner-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 18px;
-            gap: 12px;
-            position: relative;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .demo-banner i.fa-flask {
-            font-size: 14px;
-            animation: pulse 3s infinite;
-            margin-right: 5px;
-        }
-
-        .demo-banner-close {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            font-size: 11px;
-            margin-left: 10px;
-        }
-
-        .demo-banner-close:hover {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.1);
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
+        /* Estilos eliminados: .demo-banner - ya no se usa banner DEMO */
 
         /* Alertas */
         .alert {
@@ -890,6 +873,11 @@
             text-transform: uppercase;
         }
 
+        .badge-merito {
+            background: rgba(33, 150, 243, 0.1);
+            color: #1976d2;
+        }
+
         .badge-leve {
             background: rgba(76, 175, 80, 0.1);
             color: var(--color-ata-verde);
@@ -903,6 +891,112 @@
         .badge-muy-grave {
             background: rgba(193, 39, 45, 0.1);
             color: var(--color-ata-rojo);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: var(--color-ata-verde);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .detalle-row {
+            display: flex;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detalle-row:last-child {
+            border-bottom: none;
+        }
+
+        .detalle-label {
+            font-weight: 600;
+            color: var(--color-ata-verde);
+            width: 140px;
+            flex-shrink: 0;
+        }
+
+        .detalle-value {
+            color: #333;
+            flex: 1;
+        }
+
+        .detalle-descripcion {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            line-height: 1.6;
         }
 
         /* Tablas */
@@ -1040,19 +1134,7 @@
             gap: 15px;
         }
 
-        /* Banner Demo - Responsive */
-        @media (max-width: 768px) {
-            .demo-banner {
-                bottom: 20px;
-                right: 20px;
-                max-width: 200px;
-            }
-            
-            .demo-banner-content {
-                padding: 8px 15px;
-                font-size: 12px;
-            }
-        }
+        /* Estilos eliminados: .demo-banner responsive - ya no se usa */
 
         @media (max-width: 768px) {
             .grid-4 {
@@ -1699,34 +1781,34 @@
                     <!-- Estadísticas principales -->
                     <div class="grid grid-4" id="statsGrid">
                         <div class="stats-card">
-                            <div class="stats-number">156</div>
+                            <div class="stats-number" id="statTotalIncidencias">0</div>
                             <div class="stats-label">Total Incidencias</div>
-                            <div class="stats-trend trend-up">
-                                <i class="fas fa-arrow-up"></i> +12%
+                            <div class="stats-trend" id="trendTotal">
+                                <i class="fas fa-minus"></i> --
                             </div>
                         </div>
                         
                         <div class="stats-card">
-                            <div class="stats-number">89</div>
+                            <div class="stats-number" id="statEsteMes">0</div>
                             <div class="stats-label">Este Mes</div>
-                            <div class="stats-trend trend-down">
-                                <i class="fas fa-arrow-down"></i> -5%
+                            <div class="stats-trend" id="trendMes">
+                                <i class="fas fa-minus"></i> --
                             </div>
                         </div>
                         
                         <div class="stats-card">
-                            <div class="stats-number">23</div>
+                            <div class="stats-number" id="statPendientes">0</div>
                             <div class="stats-label">Pendientes</div>
-                            <div class="stats-trend trend-up">
-                                <i class="fas fa-arrow-up"></i> +3
+                            <div class="stats-trend" id="trendPendientes">
+                                <i class="fas fa-minus"></i> --
                             </div>
                         </div>
                         
                         <div class="stats-card">
-                            <div class="stats-number">12</div>
+                            <div class="stats-number" id="statCasosGraves">0</div>
                             <div class="stats-label">Casos Graves</div>
-                            <div class="stats-trend trend-down">
-                                <i class="fas fa-arrow-down"></i> -2
+                            <div class="stats-trend" id="trendGraves">
+                                <i class="fas fa-minus"></i> --
                             </div>
                         </div>
                     </div>
@@ -1752,15 +1834,31 @@
                         
                         <form id="incidenciaForm" onsubmit="submitIncident(event)">
                             <div class="grid grid-2">
-                                <div class="form-group">
+                                <div class="form-group" style="position: relative;">
                                     <label class="form-label">Buscar Estudiante</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-input" id="studentSearch" placeholder="Nombre del estudiante..." required>
+                                        <input type="text" class="form-input" id="studentSearch" 
+                                               placeholder="Escriba el nombre del estudiante..." 
+                                               autocomplete="off"
+                                               oninput="handleStudentSearch(this.value)">
+                                        <input type="hidden" id="studentId">
                                         <div class="input-group-append">
                                             <span class="input-group-icon">
                                                 <i class="fas fa-search"></i>
                                             </span>
                                         </div>
+                                    </div>
+                                    <!-- Dropdown de resultados -->
+                                    <div id="studentSearchResults" class="autocomplete-dropdown" style="display: none;">
+                                        <!-- Se llena dinámicamente -->
+                                    </div>
+                                    <!-- Info del estudiante seleccionado -->
+                                    <div id="studentSelectedInfo" style="display: none; margin-top: 8px; padding: 10px; background: #e8f5e9; border-radius: 8px; font-size: 13px;">
+                                        <i class="fas fa-check-circle" style="color: var(--color-ata-verde);"></i>
+                                        <span id="studentSelectedName"></span>
+                                        <button type="button" onclick="clearStudentSelection()" style="float: right; background: none; border: none; color: #999; cursor: pointer;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -2018,7 +2116,7 @@
                         </h3>
                         
                         <div class="table-container">
-                            <table class="table">
+                            <table class="table" id="historialTable">
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
@@ -2030,44 +2128,13 @@
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>24/09/2025</td>
-                                        <td>Ana García Torres</td>
-                                        <td>2°C</td>
-                                        <td>Tardanza</td>
-                                        <td><span class="badge badge-leve">Leve</span></td>
-                                        <td>Registrado</td>
-                                        <td>
-                                            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; width: auto;">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>24/09/2025</td>
-                                        <td>Luis Morales Cruz</td>
-                                        <td>1°B</td>
-                                        <td>Falta de respeto</td>
-                                        <td><span class="badge badge-grave">Grave</span></td>
-                                        <td>En seguimiento</td>
-                                        <td>
-                                            <button class="btn btn-warning" style="padding: 6px 12px; font-size: 12px; width: auto;">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>23/09/2025</td>
-                                        <td>Pedro Méndez Díaz</td>
-                                        <td>2°A</td>
-                                        <td>Agresión física</td>
-                                        <td><span class="badge badge-muy-grave">Muy Grave</span></td>
-                                        <td>Requiere dirección</td>
-                                        <td>
-                                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; width: auto;">
-                                                <i class="fas fa-exclamation"></i>
-                                            </button>
+                                <tbody id="historialTableBody">
+                                    <!-- Se carga dinámicamente desde Supabase -->
+                                    <tr id="historialEmpty">
+                                        <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                                            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 15px; display: block; opacity: 0.5;"></i>
+                                            No hay incidencias registradas aún.<br>
+                                            <small>Las incidencias que registres aparecerán aquí.</small>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -2086,37 +2153,38 @@
                     <div class="card">
                         <h3>
                             <i class="fas fa-chart-pie"></i>
-                            Resumen por Aulas - Septiembre 2025
+                            Resumen por Aulas - <span id="reportesMesActual">Cargando...</span>
                         </h3>
                         
-                        <div class="grid grid-3">
-                            <div class="stats-card">
-                                <div class="stats-number">1°A</div>
-                                <div class="stats-label">15 incidencias</div>
-                                <div style="margin-top: 10px;">
-                                    <span class="badge badge-leve">12 leves</span>
-                                    <span class="badge badge-grave">3 graves</span>
-                                </div>
+                        <div id="reportesAulasContainer" class="grid grid-3">
+                            <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #666;"></i>
+                                <p style="color: #666; margin-top: 10px;">Cargando estadísticas...</p>
                             </div>
-                            
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>
+                            <i class="fas fa-chart-bar"></i>
+                            Resumen General
+                        </h3>
+                        <div id="reportesResumenGeneral" class="grid grid-4">
                             <div class="stats-card">
-                                <div class="stats-number">2°B</div>
-                                <div class="stats-label">28 incidencias</div>
-                                <div style="margin-top: 10px;">
-                                    <span class="badge badge-leve">20 leves</span>
-                                    <span class="badge badge-grave">6 graves</span>
-                                    <span class="badge badge-muy-grave">2 muy graves</span>
-                                </div>
+                                <div class="stats-number" id="reporteTotalIncidencias">0</div>
+                                <div class="stats-label">Total Incidencias</div>
                             </div>
-                            
                             <div class="stats-card">
-                                <div class="stats-number">3°A</div>
-                                <div class="stats-label">31 incidencias</div>
-                                <div style="margin-top: 10px;">
-                                    <span class="badge badge-leve">24 leves</span>
-                                    <span class="badge badge-grave">5 graves</span>
-                                    <span class="badge badge-muy-grave">2 muy graves</span>
-                                </div>
+                                <div class="stats-number" id="reporteTotalMeritos">0</div>
+                                <div class="stats-label">Méritos</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-number" id="reporteTotalDemeritos">0</div>
+                                <div class="stats-label">Deméritos</div>
+                            </div>
+                            <div class="stats-card">
+                                <div class="stats-number" id="reporteTotalEstudiantes">796</div>
+                                <div class="stats-label">Estudiantes</div>
                             </div>
                         </div>
                     </div>
@@ -2146,7 +2214,7 @@
                         <!-- Solicitudes Pendientes -->
                         <div class="card admin-card">
                             <h3><i class="fas fa-clipboard-check"></i> Solicitudes Pendientes</h3>
-                            <div class="stats-number" style="color: var(--color-ata-rojo);">5</div>
+                            <div class="stats-number" id="adminSolicitudesPendientes" style="color: var(--color-ata-rojo);">0</div>
                             <div class="stats-label">Pendientes de aprobación</div>
                             <button class="btn btn-warning btn-sm" onclick="showPendingRequests()" style="width: 100%; margin-top: 10px;">
                                 <i class="fas fa-eye"></i> Revisar Solicitudes
@@ -2184,15 +2252,15 @@
                             <h3><i class="fas fa-tachometer-alt"></i> Estadísticas Sistema</h3>
                             <div class="grid grid-2" style="gap: 15px; margin-top: 10px;">
                                 <div class="mini-stat">
-                                    <div class="stats-number" style="font-size: 18px;">156</div>
+                                    <div class="stats-number" id="adminTotalUsuarios" style="font-size: 18px;">0</div>
                                     <div class="stats-label" style="font-size: 11px;">Total Usuarios</div>
                                 </div>
                                 <div class="mini-stat">
-                                    <div class="stats-number" style="font-size: 18px;">1,247</div>
+                                    <div class="stats-number" id="adminTotalIncidencias" style="font-size: 18px;">0</div>
                                     <div class="stats-label" style="font-size: 11px;">Incidencias</div>
                                 </div>
                                 <div class="mini-stat">
-                                    <div class="stats-number" style="font-size: 18px;">89</div>
+                                    <div class="stats-number" id="adminIncidenciasMes" style="font-size: 18px;">0</div>
                                     <div class="stats-label" style="font-size: 11px;">Este Mes</div>
                                 </div>
                                 <div class="mini-stat">
@@ -2205,18 +2273,36 @@
                         <!-- Backup y Mantenimiento -->
                         <div class="card admin-card">
                             <h3><i class="fas fa-database"></i> Backup y Mantenimiento</h3>
-                            <div class="alert alert-success" style="margin: 10px 0; font-size: 12px;">
-                                <i class="fas fa-check-circle"></i>
-                                Último backup: 24/09/2025 - 02:00 AM
+                            <div class="alert alert-info" style="margin: 10px 0; font-size: 12px;">
+                                <i class="fas fa-info-circle"></i>
+                                Base de datos en Supabase (backup automático)
                             </div>
                             <button class="btn btn-warning btn-sm" onclick="performBackup()" style="width: 100%;">
-                                <i class="fas fa-save"></i> Crear Backup Manual
+                                <i class="fas fa-save"></i> Exportar Datos
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
+
+        <!-- Modal para detalles de incidencia -->
+        <div id="modalDetalleIncidencia" class="modal-overlay" style="display: none;">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h3 id="modalTitulo"><i class="fas fa-file-alt"></i> Detalle de Incidencia</h3>
+                    <button class="modal-close" onclick="cerrarModalDetalle()">&times;</button>
+                </div>
+                <div class="modal-body" id="modalContenido">
+                    <p>Cargando...</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="cerrarModalDetalle()">
+                        <i class="fas fa-times"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Footer -->
         <footer class="footer">
@@ -2352,6 +2438,522 @@
         };
 
         let currentUser = null;
+
+        // ============================================================================
+        // FUNCIONES DE CONSULTA A SUPABASE - DATOS REALES
+        // ============================================================================
+
+        // Cache para evitar consultas repetidas
+        let estudiantesCache = null;
+        let catalogoMeritosCache = null;
+        let catalogoDemeritosCache = null;
+        let periodosCache = null;
+
+        // Obtener período activo actual
+        async function getPeriodoActivo() {
+            if (periodosCache) return periodosCache;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('periodos')
+                    .select('*')
+                    .eq('activo', true)
+                    .single();
+                
+                if (error) throw error;
+                periodosCache = data;
+                return data;
+            } catch (err) {
+                console.error('Error obteniendo período activo:', err);
+                return null;
+            }
+        }
+
+        // Obtener estadísticas del dashboard para el usuario actual
+        async function getEstadisticasUsuario(userId) {
+            try {
+                const periodo = await getPeriodoActivo();
+                const periodoId = periodo?.id;
+                const now = new Date();
+                const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                
+                // Total de incidencias registradas por este usuario
+                const { count: totalIncidencias } = await supabase
+                    .from('incidencias')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('registrado_por', userId);
+                
+                // Incidencias de este mes
+                const { count: esteMes } = await supabase
+                    .from('incidencias')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('registrado_por', userId)
+                    .gte('fecha', inicioMes);
+                
+                // Incidencias pendientes
+                const { count: pendientes } = await supabase
+                    .from('incidencias')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('registrado_por', userId)
+                    .eq('estado', 'pendiente');
+                
+                // Casos graves y muy graves
+                const { count: casosGraves } = await supabase
+                    .from('incidencias')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('registrado_por', userId)
+                    .in('severidad', ['grave', 'muy_grave']);
+                
+                return {
+                    totalIncidencias: totalIncidencias || 0,
+                    esteMes: esteMes || 0,
+                    pendientes: pendientes || 0,
+                    casosGraves: casosGraves || 0
+                };
+            } catch (err) {
+                console.error('Error obteniendo estadísticas:', err);
+                return { totalIncidencias: 0, esteMes: 0, pendientes: 0, casosGraves: 0 };
+            }
+        }
+
+        // Actualizar UI del dashboard con estadísticas reales
+        async function actualizarDashboardStats() {
+            if (!currentUser || !currentUser.id) return;
+            
+            const stats = await getEstadisticasUsuario(currentUser.id);
+            
+            // Actualizar números en el dashboard
+            const statTotal = document.getElementById('statTotalIncidencias');
+            const statMes = document.getElementById('statEsteMes');
+            const statPendientes = document.getElementById('statPendientes');
+            const statGraves = document.getElementById('statCasosGraves');
+            
+            if (statTotal) statTotal.textContent = stats.totalIncidencias;
+            if (statMes) statMes.textContent = stats.esteMes;
+            if (statPendientes) statPendientes.textContent = stats.pendientes;
+            if (statGraves) statGraves.textContent = stats.casosGraves;
+        }
+
+        // Obtener historial de incidencias del usuario actual
+        async function getHistorialIncidencias(userId, limit = 50) {
+            try {
+                const { data, error } = await supabase
+                    .from('incidencias')
+                    .select(`
+                        id,
+                        fecha,
+                        tipo,
+                        severidad,
+                        estado,
+                        descripcion,
+                        estudiante:estudiantes(id, nombre_completo, grado, seccion),
+                        catalogo_demerito:catalogo_demeritos(nombre),
+                        catalogo_merito:catalogo_meritos(nombre)
+                    `)
+                    .eq('registrado_por', userId)
+                    .order('fecha', { ascending: false })
+                    .limit(limit);
+                
+                if (error) throw error;
+                return data || [];
+            } catch (err) {
+                console.error('Error obteniendo historial:', err);
+                return [];
+            }
+        }
+
+        // Renderizar tabla de historial
+        async function renderizarHistorial() {
+            if (!currentUser || !currentUser.id) return;
+            
+            const tbody = document.getElementById('historialTableBody');
+            if (!tbody) return;
+            
+            const incidencias = await getHistorialIncidencias(currentUser.id);
+            
+            if (incidencias.length === 0) {
+                tbody.innerHTML = `
+                    <tr id="historialEmpty">
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 15px; display: block; opacity: 0.5;"></i>
+                            No hay incidencias registradas aún.<br>
+                            <small>Las incidencias que registres aparecerán aquí.</small>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = incidencias.map(inc => {
+                const estudiante = inc.estudiante;
+                const aula = estudiante ? `${estudiante.grado}°${estudiante.seccion}` : '-';
+                const nombreEstudiante = estudiante ? estudiante.nombre_completo : 'Desconocido';
+                const tipoNombre = inc.tipo === 'merito' 
+                    ? (inc.catalogo_merito?.nombre || 'Mérito')
+                    : (inc.catalogo_demerito?.nombre || 'Demérito');
+                
+                const severidadClass = inc.severidad === 'leve' ? 'badge-leve' 
+                    : inc.severidad === 'grave' ? 'badge-grave' 
+                    : inc.severidad === 'muy_grave' ? 'badge-muy-grave' : '';
+                
+                const severidadText = inc.severidad === 'leve' ? 'Leve'
+                    : inc.severidad === 'grave' ? 'Grave'
+                    : inc.severidad === 'muy_grave' ? 'Muy Grave' : '-';
+                
+                const estadoText = inc.estado === 'pendiente' ? 'Pendiente'
+                    : inc.estado === 'revisado' ? 'Revisado'
+                    : inc.estado === 'resuelto' ? 'Resuelto' : inc.estado;
+                
+                const fecha = new Date(inc.fecha).toLocaleDateString('es-PE');
+                
+                return `
+                    <tr>
+                        <td>${fecha}</td>
+                        <td>${nombreEstudiante}</td>
+                        <td>${aula}</td>
+                        <td>${tipoNombre}</td>
+                        <td><span class="badge ${severidadClass}">${severidadText}</span></td>
+                        <td>${estadoText}</td>
+                        <td>
+                            <button class="btn btn-secondary" onclick="verDetalleIncidencia('${inc.id}')" style="padding: 6px 12px; font-size: 12px; width: auto;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Ver detalle de una incidencia
+        async function verDetalleIncidencia(incidenciaId) {
+            const modal = document.getElementById('modalDetalleIncidencia');
+            const contenido = document.getElementById('modalContenido');
+            const titulo = document.getElementById('modalTitulo');
+            
+            modal.style.display = 'flex';
+            contenido.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Cargando detalles...</p>';
+            
+            try {
+                const { data: inc, error } = await supabase
+                    .from('incidencias')
+                    .select(`
+                        *,
+                        estudiante:estudiantes(id, nombre_completo, dni, grado, seccion, nivel),
+                        catalogo_demerito:catalogo_demeritos(codigo, nombre, descripcion, severidad, categoria),
+                        catalogo_merito:catalogo_meritos(codigo, nombre, descripcion, area),
+                        registrador:users!registrado_por(nombres, apellidos, role)
+                    `)
+                    .eq('id', incidenciaId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Determinar tipo y color
+                const esMerito = inc.tipo === 'merito';
+                const icono = esMerito ? 'fa-trophy' : 'fa-exclamation-triangle';
+                const colorTipo = esMerito ? '#1976d2' : '#c1272d';
+                
+                titulo.innerHTML = `<i class="fas ${icono}" style="color: ${esMerito ? '#ffd700' : '#fff'}"></i> ${esMerito ? 'Mérito' : 'Demérito'} - Detalle`;
+                
+                const estudiante = inc.estudiante;
+                const catalogo = esMerito ? inc.catalogo_merito : inc.catalogo_demerito;
+                const registrador = inc.registrador;
+                
+                // Formatear fecha
+                const fecha = new Date(inc.fecha).toLocaleDateString('es-PE', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                const fechaCreacion = new Date(inc.created_at).toLocaleString('es-PE');
+                
+                // Severidad badge
+                let severidadHTML = '';
+                if (!esMerito && inc.severidad) {
+                    const sevClass = inc.severidad === 'leve' ? 'badge-leve' 
+                        : inc.severidad === 'grave' ? 'badge-grave' : 'badge-muy-grave';
+                    const sevText = inc.severidad === 'leve' ? 'Leve' 
+                        : inc.severidad === 'grave' ? 'Grave' : 'Muy Grave';
+                    severidadHTML = `<span class="badge ${sevClass}">${sevText}</span>`;
+                }
+                
+                // Estado badge
+                const estadoClass = inc.estado === 'resuelto' ? 'badge-leve' 
+                    : inc.estado === 'revisado' ? 'badge-grave' : '';
+                const estadoText = inc.estado === 'pendiente' ? 'Pendiente'
+                    : inc.estado === 'revisado' ? 'Revisado' : 'Resuelto';
+                
+                contenido.innerHTML = `
+                    <div class="detalle-row">
+                        <div class="detalle-label"><i class="fas fa-user-graduate"></i> Estudiante:</div>
+                        <div class="detalle-value">
+                            <strong>${estudiante?.nombre_completo || 'N/A'}</strong>
+                            <br><small>DNI: ${estudiante?.dni || 'N/A'} | ${estudiante?.grado}° ${estudiante?.seccion} - ${estudiante?.nivel}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="detalle-row">
+                        <div class="detalle-label"><i class="fas fa-calendar"></i> Fecha:</div>
+                        <div class="detalle-value">${fecha}</div>
+                    </div>
+                    
+                    <div class="detalle-row">
+                        <div class="detalle-label"><i class="fas fa-tag"></i> Tipo:</div>
+                        <div class="detalle-value">
+                            <span style="color: ${colorTipo}; font-weight: 600;">
+                                ${esMerito ? '🏆 MÉRITO' : '⚠️ DEMÉRITO'}
+                            </span>
+                            ${severidadHTML}
+                        </div>
+                    </div>
+                    
+                    <div class="detalle-row">
+                        <div class="detalle-label"><i class="fas fa-list-alt"></i> Categoría:</div>
+                        <div class="detalle-value">
+                            <strong>${catalogo?.nombre || 'N/A'}</strong>
+                            <br><small>Código: ${catalogo?.codigo || inc.codigo || 'N/A'}</small>
+                            ${catalogo?.descripcion ? `<br><small style="color: #666;">${catalogo.descripcion}</small>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="detalle-row">
+                        <div class="detalle-label"><i class="fas fa-info-circle"></i> Estado:</div>
+                        <div class="detalle-value"><span class="badge ${estadoClass}">${estadoText}</span></div>
+                    </div>
+                    
+                    <div class="detalle-row">
+                        <div class="detalle-label"><i class="fas fa-user-tie"></i> Registrado por:</div>
+                        <div class="detalle-value">
+                            ${registrador ? `${registrador.nombres} ${registrador.apellidos}` : 'N/A'}
+                            <br><small>Rol: ${registrador?.role || 'N/A'}</small>
+                            <br><small>Fecha registro: ${fechaCreacion}</small>
+                        </div>
+                    </div>
+                    
+                    ${inc.descripcion ? `
+                    <div style="margin-top: 20px;">
+                        <div class="detalle-label" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-comment-alt"></i> Descripción / Observaciones:
+                        </div>
+                        <div class="detalle-descripcion">
+                            ${inc.descripcion.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${inc.accion_requerida ? `
+                    <div style="margin-top: 15px;">
+                        <div class="detalle-label" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-tasks"></i> Acción Requerida:
+                        </div>
+                        <div class="detalle-descripcion" style="background: #fff3e0;">
+                            ${inc.accion_requerida}
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                
+            } catch (err) {
+                console.error('Error obteniendo detalle:', err);
+                contenido.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #e74c3c;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 15px;"></i>
+                        <p>Error al cargar los detalles</p>
+                        <small>${err.message}</small>
+                    </div>
+                `;
+            }
+        }
+        
+        // Cerrar modal de detalle
+        function cerrarModalDetalle() {
+            document.getElementById('modalDetalleIncidencia').style.display = 'none';
+        }
+        
+        // Cerrar modal al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('modalDetalleIncidencia');
+            if (e.target === modal) {
+                cerrarModalDetalle();
+            }
+        });
+
+        // Buscar estudiantes para autocompletado
+        async function buscarEstudiantes(query) {
+            if (!query || query.length < 2) return [];
+            
+            try {
+                const { data, error } = await supabase
+                    .from('estudiantes')
+                    .select('id, nombre_completo, dni, grado, seccion, nivel')
+                    .ilike('nombre_completo', `%${query}%`)
+                    .eq('activo', true)
+                    .limit(10);
+                
+                if (error) throw error;
+                return data || [];
+            } catch (err) {
+                console.error('Error buscando estudiantes:', err);
+                return [];
+            }
+        }
+
+        // Obtener catálogo de méritos
+        async function getCatalogoMeritos() {
+            if (catalogoMeritosCache) return catalogoMeritosCache;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('catalogo_meritos')
+                    .select('*')
+                    .eq('vigente', true)
+                    .order('codigo');
+                
+                if (error) throw error;
+                catalogoMeritosCache = data || [];
+                return catalogoMeritosCache;
+            } catch (err) {
+                console.error('Error obteniendo catálogo de méritos:', err);
+                return [];
+            }
+        }
+
+        // Obtener catálogo de deméritos
+        async function getCatalogoDemeritros() {
+            if (catalogoDemeritosCache) return catalogoDemeritosCache;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('catalogo_demeritos')
+                    .select('*')
+                    .eq('vigente', true)
+                    .order('severidad', { ascending: true })
+                    .order('codigo');
+                
+                if (error) throw error;
+                catalogoDemeritosCache = data || [];
+                return catalogoDemeritosCache;
+            } catch (err) {
+                console.error('Error obteniendo catálogo de deméritos:', err);
+                return [];
+            }
+        }
+
+        // Registrar nueva incidencia en Supabase
+        async function registrarIncidencia(incidenciaData) {
+            try {
+                const periodo = await getPeriodoActivo();
+                if (!periodo) {
+                    throw new Error('No hay un período académico activo');
+                }
+                
+                const { data, error } = await supabase
+                    .from('incidencias')
+                    .insert({
+                        estudiante_id: incidenciaData.estudianteId,
+                        periodo_id: periodo.id,
+                        tipo: incidenciaData.tipo,
+                        catalogo_merito_id: incidenciaData.catalogoMeritoId || null,
+                        catalogo_demerito_id: incidenciaData.catalogoDemeritoId || null,
+                        codigo: incidenciaData.codigo || null,
+                        descripcion: incidenciaData.descripcion,
+                        severidad: incidenciaData.severidad || null,
+                        registrado_por: currentUser.id,
+                        estado: 'pendiente',
+                        fecha: new Date().toISOString().split('T')[0]
+                    })
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                console.log('✅ Incidencia registrada:', data);
+                return { success: true, data };
+            } catch (err) {
+                console.error('❌ Error registrando incidencia:', err);
+                return { success: false, error: err.message };
+            }
+        }
+
+        // Obtener hijos del padre actual (para Portal de Padres)
+        async function getHijosDelPadre(padreId) {
+            try {
+                const { data, error } = await supabase
+                    .from('estudiantes')
+                    .select('id, nombre_completo, dni, grado, seccion, nivel')
+                    .or(`padre_id.eq.${padreId},madre_id.eq.${padreId},apoderado_id.eq.${padreId}`)
+                    .eq('activo', true);
+                
+                if (error) throw error;
+                return data || [];
+            } catch (err) {
+                console.error('Error obteniendo hijos:', err);
+                return [];
+            }
+        }
+
+        // Obtener incidencias de un estudiante (para que el padre vea)
+        async function getIncidenciasEstudiante(estudianteId) {
+            try {
+                const { data, error } = await supabase
+                    .from('incidencias')
+                    .select(`
+                        id,
+                        fecha,
+                        tipo,
+                        severidad,
+                        estado,
+                        descripcion,
+                        catalogo_demerito:catalogo_demeritos(nombre, categoria),
+                        catalogo_merito:catalogo_meritos(nombre, area)
+                    `)
+                    .eq('estudiante_id', estudianteId)
+                    .order('fecha', { ascending: false });
+                
+                if (error) throw error;
+                return data || [];
+            } catch (err) {
+                console.error('Error obteniendo incidencias del estudiante:', err);
+                return [];
+            }
+        }
+
+        // Estadísticas para el Portal del Padre
+        async function getEstadisticasPadre(padreId) {
+            try {
+                const hijos = await getHijosDelPadre(padreId);
+                const estadisticas = [];
+                
+                for (const hijo of hijos) {
+                    const incidencias = await getIncidenciasEstudiante(hijo.id);
+                    const now = new Date();
+                    const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
+                    
+                    const incidenciasMes = incidencias.filter(i => new Date(i.fecha) >= inicioMes);
+                    const casosGraves = incidencias.filter(i => i.severidad === 'grave' || i.severidad === 'muy_grave');
+                    const meritos = incidencias.filter(i => i.tipo === 'merito');
+                    
+                    estadisticas.push({
+                        estudiante: hijo,
+                        totalIncidencias: incidencias.length,
+                        incidenciasMes: incidenciasMes.length,
+                        casosGraves: casosGraves.length,
+                        meritos: meritos.length,
+                        ultimasIncidencias: incidencias.slice(0, 5)
+                    });
+                }
+                
+                return estadisticas;
+            } catch (err) {
+                console.error('Error obteniendo estadísticas del padre:', err);
+                return [];
+            }
+        }
+
+        // Variable para almacenar estudiante seleccionado
+        let estudianteSeleccionado = null;
+
+        // ============================================================================
+        // FIN FUNCIONES DE CONSULTA A SUPABASE
+        // ============================================================================
 
         // Función para mostrar mensajes inline
         function showLoginMessage(message, type = 'error') {
@@ -2495,14 +3097,28 @@
                 console.log('✅ Login exitoso!');
                 showLoginMessage('Iniciando sesión...', 'success');
                 
+                // Definir permisos según el rol
+                const rolePermissions = {
+                    'docente': ['incidencias', 'historial'],
+                    'tutor': ['incidencias', 'historial', 'reportes'],
+                    'auxiliar': ['incidencias', 'historial'],
+                    'toe': ['incidencias', 'historial', 'reportes'],
+                    'direccion': ['incidencias', 'historial', 'reportes'],
+                    'padre': ['historial'],
+                    'admin': ['incidencias', 'historial', 'reportes']
+                };
+                
                 setTimeout(() => {
                     currentUser = {
                         username: userData.dni || userData.email,
                         email: userData.email,
                         role: userData.role,
+                        name: userData.nombre_completo || 'Usuario',
                         nombre: userData.nombre_completo,
                         dni: userData.dni,
-                        id: userData.id
+                        id: userData.id,
+                        permissions: rolePermissions[userData.role] || ['historial'],
+                        isDemo: userData.email && userData.email.includes('.demo@')
                     };
                     console.log('👤 Current user set:', currentUser);
                     login();
@@ -2515,7 +3131,7 @@
         }
 
         // Función de login exitoso
-        function login() {
+        async function login() {
             document.getElementById('loginScreen').style.display = 'none';
             const mainApp = document.getElementById('mainApp');
             mainApp.classList.add('show');
@@ -2530,9 +3146,284 @@
             // Configurar dashboard según rol
             setupDashboard();
             
-            // Mostrar indicador demo si es una cuenta de demo
-            if (currentUser.isDemo) {
-                showDemoBanner();
+            // Cargar datos reales desde Supabase
+            await cargarDatosReales();
+        }
+        
+        // Cargar datos reales del usuario desde Supabase
+        async function cargarDatosReales() {
+            if (!currentUser || !currentUser.id) return;
+            
+            console.log('📊 Cargando datos reales desde Supabase...');
+            
+            // Si es padre, cargar portal especial
+            if (currentUser.role === 'padre') {
+                await cargarPortalPadre();
+            } else {
+                // Actualizar estadísticas del dashboard para roles institucionales
+                await actualizarDashboardStats();
+                
+                // Cargar datos específicos según el rol
+                await cargarDatosEspecificosRol();
+            }
+            
+            // Cargar historial de incidencias
+            await renderizarHistorial();
+            
+            console.log('✅ Datos cargados correctamente');
+        }
+        
+        // Cargar datos específicos del panel según rol
+        async function cargarDatosEspecificosRol() {
+            if (!currentUser) return;
+            
+            const rol = currentUser.role.toLowerCase();
+            
+            try {
+                // Obtener mis incidencias de hoy
+                const hoy = new Date().toISOString().split('T')[0];
+                const { data: incidenciasHoy, error } = await supabase
+                    .from('incidencias')
+                    .select('*')
+                    .eq('registrado_por', currentUser.id)
+                    .gte('fecha_hora', hoy + 'T00:00:00')
+                    .lte('fecha_hora', hoy + 'T23:59:59');
+                
+                const totalHoy = incidenciasHoy ? incidenciasHoy.length : 0;
+                const pendientes = incidenciasHoy ? incidenciasHoy.filter(i => i.estado === 'pendiente').length : 0;
+                
+                // Actualizar panel según rol
+                if (rol.includes('docente')) {
+                    const container = document.getElementById('docenteIncidenciasHoy');
+                    if (container) {
+                        container.innerHTML = `
+                            <p><strong>${totalHoy}</strong> incidencias registradas hoy</p>
+                            <p><strong>${pendientes}</strong> pendientes de seguimiento</p>
+                        `;
+                    }
+                } else if (rol.includes('tutor')) {
+                    const aulaInfo = document.getElementById('tutorAulaInfo');
+                    const actividadReciente = document.getElementById('tutorActividadReciente');
+                    
+                    // Contar estudiantes del aula del tutor (si tiene aula asignada)
+                    if (aulaInfo) {
+                        const { data: stats } = await supabase
+                            .from('incidencias')
+                            .select('id')
+                            .eq('registrado_por', currentUser.id);
+                        
+                        aulaInfo.innerHTML = `
+                            <p><strong>${stats ? stats.length : 0}</strong> incidencias registradas</p>
+                            <p><strong>${totalHoy}</strong> hoy</p>
+                        `;
+                    }
+                    
+                    if (actividadReciente) {
+                        actividadReciente.innerHTML = `
+                            <p>${totalHoy > 0 ? totalHoy + ' registros hoy' : 'Sin actividad hoy'}</p>
+                        `;
+                    }
+                } else if (rol.includes('auxiliar')) {
+                    const container = document.getElementById('auxiliarRegistrosRecientes');
+                    if (container) {
+                        container.innerHTML = `
+                            <p><strong>${totalHoy}</strong> registros hoy</p>
+                            <p>${pendientes > 0 ? pendientes + ' pendientes' : 'Todo al día'}</p>
+                        `;
+                    }
+                } else if (rol.includes('toe')) {
+                    const casosInfo = document.getElementById('toeCasosInfo');
+                    if (casosInfo) {
+                        // Contar casos graves/muy_graves como "seguimiento"
+                        const { data: casosGraves } = await supabase
+                            .from('incidencias')
+                            .select('id')
+                            .in('gravedad', ['grave', 'muy_grave']);
+                        
+                        casosInfo.innerHTML = `
+                            <p><strong>${casosGraves ? casosGraves.length : 0}</strong> casos graves/muy graves</p>
+                            <p><strong>${totalHoy}</strong> registros hoy</p>
+                        `;
+                    }
+                } else if (rol.includes('direc')) {
+                    const resumen = document.getElementById('direccionResumen');
+                    if (resumen) {
+                        // Estadísticas generales
+                        const { data: totalIncidencias } = await supabase
+                            .from('incidencias')
+                            .select('id');
+                        
+                        const { data: casosGraves } = await supabase
+                            .from('incidencias')
+                            .select('id')
+                            .in('gravedad', ['grave', 'muy_grave']);
+                        
+                        resumen.innerHTML = `
+                            <p><strong>${totalIncidencias ? totalIncidencias.length : 0}</strong> incidencias totales</p>
+                            <p><strong>${casosGraves ? casosGraves.length : 0}</strong> casos graves</p>
+                            <p>796 estudiantes registrados</p>
+                        `;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error cargando datos específicos del rol:', error);
+            }
+        }
+        
+        // Cargar datos de reportes (cuando se accede a la sección)
+        async function cargarDatosReportes() {
+            console.log('📊 Cargando datos de reportes...');
+            
+            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const mesActual = meses[new Date().getMonth()];
+            const anioActual = new Date().getFullYear();
+            
+            const mesLabel = document.getElementById('reportesMesActual');
+            if (mesLabel) mesLabel.textContent = `${mesActual} ${anioActual}`;
+            
+            try {
+                // Obtener todas las incidencias con información de estudiantes
+                const { data: incidencias, error } = await supabase
+                    .from('incidencias')
+                    .select(`
+                        id,
+                        tipo,
+                        gravedad,
+                        estudiante_id,
+                        estudiantes (
+                            grado,
+                            seccion
+                        )
+                    `);
+                
+                if (error) throw error;
+                
+                // Agrupar por grado y sección
+                const porAula = {};
+                let totalMeritos = 0;
+                let totalDemeritos = 0;
+                
+                if (incidencias) {
+                    incidencias.forEach(inc => {
+                        if (inc.tipo === 'merito') totalMeritos++;
+                        else totalDemeritos++;
+                        
+                        if (inc.estudiantes) {
+                            const aula = `${inc.estudiantes.grado}°${inc.estudiantes.seccion}`;
+                            if (!porAula[aula]) {
+                                porAula[aula] = { total: 0, leve: 0, grave: 0, muy_grave: 0, merito: 0 };
+                            }
+                            porAula[aula].total++;
+                            if (inc.tipo === 'merito') {
+                                porAula[aula].merito++;
+                            } else if (inc.gravedad) {
+                                porAula[aula][inc.gravedad]++;
+                            }
+                        }
+                    });
+                }
+                
+                // Actualizar resumen general
+                document.getElementById('reporteTotalIncidencias').textContent = incidencias ? incidencias.length : 0;
+                document.getElementById('reporteTotalMeritos').textContent = totalMeritos;
+                document.getElementById('reporteTotalDemeritos').textContent = totalDemeritos;
+                
+                // Renderizar cards por aula
+                const container = document.getElementById('reportesAulasContainer');
+                if (container) {
+                    if (Object.keys(porAula).length === 0) {
+                        container.innerHTML = `
+                            <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                                <i class="fas fa-inbox" style="font-size: 48px; color: #ccc;"></i>
+                                <p style="color: #666; margin-top: 15px;">No hay incidencias registradas aún</p>
+                            </div>
+                        `;
+                    } else {
+                        // Ordenar aulas
+                        const aulasOrdenadas = Object.keys(porAula).sort();
+                        
+                        container.innerHTML = aulasOrdenadas.map(aula => {
+                            const data = porAula[aula];
+                            return `
+                                <div class="stats-card">
+                                    <div class="stats-number">${aula}</div>
+                                    <div class="stats-label">${data.total} incidencias</div>
+                                    <div style="margin-top: 10px;">
+                                        ${data.merito > 0 ? `<span class="badge badge-merito">${data.merito} méritos</span>` : ''}
+                                        ${data.leve > 0 ? `<span class="badge badge-leve">${data.leve} leves</span>` : ''}
+                                        ${data.grave > 0 ? `<span class="badge badge-grave">${data.grave} graves</span>` : ''}
+                                        ${data.muy_grave > 0 ? `<span class="badge badge-muy-grave">${data.muy_grave} muy graves</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+                
+                console.log('✅ Reportes cargados');
+                
+            } catch (error) {
+                console.error('Error cargando reportes:', error);
+                const container = document.getElementById('reportesAulasContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #e74c3c;"></i>
+                            <p style="color: #666; margin-top: 15px;">Error al cargar los reportes</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Cargar datos de admin
+        async function cargarDatosAdmin() {
+            console.log('📊 Cargando datos de administración...');
+            
+            try {
+                // Contar usuarios
+                const { data: usuarios } = await supabase
+                    .from('users')
+                    .select('id');
+                
+                // Contar incidencias
+                const { data: incidencias } = await supabase
+                    .from('incidencias')
+                    .select('id');
+                
+                // Contar incidencias del mes actual
+                const inicioMes = new Date();
+                inicioMes.setDate(1);
+                inicioMes.setHours(0, 0, 0, 0);
+                
+                const { data: incidenciasMes } = await supabase
+                    .from('incidencias')
+                    .select('id')
+                    .gte('fecha_hora', inicioMes.toISOString());
+                
+                // Contar solicitudes pendientes (usuarios inactivos)
+                const { data: pendientes } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('activo', false);
+                
+                // Actualizar UI
+                const totalUsuariosEl = document.getElementById('adminTotalUsuarios');
+                const totalIncidenciasEl = document.getElementById('adminTotalIncidencias');
+                const incidenciasMesEl = document.getElementById('adminIncidenciasMes');
+                const solicitudesEl = document.getElementById('adminSolicitudesPendientes');
+                
+                if (totalUsuariosEl) totalUsuariosEl.textContent = usuarios ? usuarios.length : 0;
+                if (totalIncidenciasEl) totalIncidenciasEl.textContent = incidencias ? incidencias.length : 0;
+                if (incidenciasMesEl) incidenciasMesEl.textContent = incidenciasMes ? incidenciasMes.length : 0;
+                if (solicitudesEl) solicitudesEl.textContent = pendientes ? pendientes.length : 0;
+                
+                console.log('✅ Datos de admin cargados');
+                
+            } catch (error) {
+                console.error('Error cargando datos de admin:', error);
             }
         }
 
@@ -2549,12 +3440,15 @@
                 if (item) item.style.display = 'none';
             });
 
-            // Mostrar solo los permitidos
-            currentUser.permissions.forEach(permission => {
-                if (navItems[permission]) {
-                    navItems[permission].style.display = 'list-item';
-                }
-            });
+            // Verificar que currentUser y permissions existan
+            if (currentUser && currentUser.permissions && Array.isArray(currentUser.permissions)) {
+                // Mostrar solo los permitidos
+                currentUser.permissions.forEach(permission => {
+                    if (navItems[permission]) {
+                        navItems[permission].style.display = 'list-item';
+                    }
+                });
+            }
         }
 
         // Configurar dashboard según rol
@@ -2638,15 +3532,16 @@
                             <button class="btn btn-primary" onclick="showSection('incidencias')">
                                 <i class="fas fa-plus"></i> Nueva Incidencia
                             </button>
-                            <button class="btn btn-secondary">
-                                <i class="fas fa-search"></i> Buscar Estudiante
+                            <button class="btn btn-secondary" onclick="showSection('historial')">
+                                <i class="fas fa-history"></i> Ver Historial
                             </button>
                         </div>
                     </div>
                     <div class="card">
                         <h3><i class="fas fa-clock"></i> Mis Incidencias Hoy</h3>
-                        <p>5 incidencias registradas</p>
-                        <p>2 pendientes de seguimiento</p>
+                        <div id="docenteIncidenciasHoy">
+                            <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2656,16 +3551,19 @@
             return `
                 <div class="grid grid-2">
                     <div class="card">
-                        <h3><i class="fas fa-users"></i> Mi Aula - 1°B</h3>
-                        <p><strong>35 estudiantes</strong></p>
-                        <p>12 incidencias este mes</p>
-                        <p>3 casos requieren seguimiento</p>
+                        <h3><i class="fas fa-users"></i> Mi Aula</h3>
+                        <div id="tutorAulaInfo">
+                            <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showSection('incidencias')" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i> Registrar Incidencia
+                        </button>
                     </div>
                     <div class="card">
-                        <h3><i class="fas fa-phone"></i> Comunicación con Padres</h3>
-                        <p>8 notificaciones enviadas</p>
-                        <p>5 respuestas recibidas</p>
-                        <p>3 pendientes de contacto</p>
+                        <h3><i class="fas fa-history"></i> Actividad Reciente</h3>
+                        <div id="tutorActividadReciente">
+                            <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2683,10 +3581,9 @@
                         </button>
                     </div>
                     <div class="card">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Alertas del Día</h3>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-clock"></i>
-                            <div>5 estudiantes con tardanzas recurrentes</div>
+                        <h3><i class="fas fa-history"></i> Mis Registros Recientes</h3>
+                        <div id="auxiliarRegistrosRecientes">
+                            <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>
                         </div>
                     </div>
                 </div>
@@ -2697,18 +3594,21 @@
             return `
                 <div class="grid grid-2">
                     <div class="card">
-                        <h3><i class="fas fa-brain"></i> Casos Psicopedagógicos</h3>
-                        <p>12 casos en seguimiento</p>
-                        <p>3 reuniones programadas</p>
-                        <p>2 derivaciones pendientes</p>
+                        <h3><i class="fas fa-brain"></i> Casos en Seguimiento</h3>
+                        <div id="toeCasosInfo">
+                            <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showSection('incidencias')" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i> Registrar Incidencia
+                        </button>
                     </div>
                     <div class="card">
                         <h3><i class="fas fa-chart-line"></i> Indicadores</h3>
                         <button class="btn btn-primary" onclick="showSection('reportes')">
                             <i class="fas fa-chart-bar"></i> Ver Reportes
                         </button>
-                        <button class="btn btn-secondary">
-                            <i class="fas fa-file-alt"></i> Generar Informe
+                        <button class="btn btn-secondary" onclick="showSection('historial')">
+                            <i class="fas fa-history"></i> Ver Historial
                         </button>
                     </div>
                 </div>
@@ -2720,14 +3620,17 @@
                 <div class="grid grid-2">
                     <div class="card">
                         <h3><i class="fas fa-building"></i> Vista Institucional</h3>
-                        <p>Gestión disciplinaria integral</p>
-                        <p>Supervisión de casos graves</p>
-                        <p>Coordinación con UGEL</p>
+                        <div id="direccionResumen">
+                            <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>
+                        </div>
                     </div>
                     <div class="card">
-                        <h3><i class="fas fa-file-pdf"></i> Reportes Ejecutivos</h3>
-                        <button class="btn btn-primary" onclick="showSection('reportes')">
-                            <i class="fas fa-download"></i> Descargar Reportes
+                        <h3><i class="fas fa-file-pdf"></i> Acciones</h3>
+                        <button class="btn btn-primary" onclick="showSection('reportes')" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-chart-bar"></i> Ver Reportes
+                        </button>
+                        <button class="btn btn-secondary" onclick="showSection('historial')" style="width: 100%;">
+                            <i class="fas fa-history"></i> Ver Historial
                         </button>
                     </div>
                 </div>
@@ -2735,29 +3638,133 @@
         }
 
         function getPadreContent() {
+            // Contenido inicial - se actualizará dinámicamente
             return `
-                <div class="card">
-                    <h3><i class="fas fa-child"></i> Seguimiento de Carlos Ruiz Pérez</h3>
-                    <div class="grid grid-3">
-                        <div class="stats-card">
-                            <div class="stats-number">3</div>
-                            <div class="stats-label">Incidencias este mes</div>
-                        </div>
-                        <div class="stats-card">
-                            <div class="stats-number">1</div>
-                            <div class="stats-label">Casos graves</div>
-                        </div>
-                        <div class="stats-card">
-                            <div class="stats-number">2</div>
-                            <div class="stats-label">Mejoras notables</div>
-                        </div>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <div>Próxima reunión con tutor: 26/09/2025 - 3:00 PM</div>
+                <div id="padrePortalContent">
+                    <div class="card" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: var(--color-ata-verde); margin-bottom: 15px;"></i>
+                        <p>Cargando información de sus hijos...</p>
                     </div>
                 </div>
             `;
+        }
+        
+        // Cargar datos reales del padre
+        async function cargarPortalPadre() {
+            if (!currentUser || currentUser.role !== 'padre') return;
+            
+            const container = document.getElementById('padrePortalContent');
+            if (!container) return;
+            
+            try {
+                const estadisticas = await getEstadisticasPadre(currentUser.id);
+                
+                if (estadisticas.length === 0) {
+                    container.innerHTML = `
+                        <div class="card" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-user-graduate" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                            <h3>No se encontraron hijos registrados</h3>
+                            <p style="color: #666;">Si cree que esto es un error, contacte a la administración del colegio.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const stat of estadisticas) {
+                    const hijo = stat.estudiante;
+                    html += `
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h3><i class="fas fa-child"></i> Seguimiento de ${hijo.nombre_completo}</h3>
+                            <p style="color: #666; margin-bottom: 15px;">${hijo.grado}° ${hijo.seccion} - ${hijo.nivel.charAt(0).toUpperCase() + hijo.nivel.slice(1)}</p>
+                            
+                            <div class="grid grid-4">
+                                <div class="stats-card">
+                                    <div class="stats-number">${stat.totalIncidencias}</div>
+                                    <div class="stats-label">Total Incidencias</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-number">${stat.incidenciasMes}</div>
+                                    <div class="stats-label">Este Mes</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-number" style="color: ${stat.casosGraves > 0 ? '#dc3545' : 'inherit'};">${stat.casosGraves}</div>
+                                    <div class="stats-label">Casos Graves</div>
+                                </div>
+                                <div class="stats-card">
+                                    <div class="stats-number" style="color: var(--color-ata-verde);">${stat.meritos}</div>
+                                    <div class="stats-label">Méritos</div>
+                                </div>
+                            </div>
+                            
+                            ${stat.ultimasIncidencias.length > 0 ? `
+                                <h4 style="margin-top: 20px;"><i class="fas fa-history"></i> Últimas Incidencias</h4>
+                                <div class="table-container">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Tipo</th>
+                                                <th>Descripción</th>
+                                                <th>Severidad</th>
+                                                <th>Detalle</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${stat.ultimasIncidencias.map(inc => {
+                                                const fecha = new Date(inc.fecha).toLocaleDateString('es-PE');
+                                                const tipoIcon = inc.tipo === 'merito' ? '🏆' : '⚠️';
+                                                const nombre = inc.tipo === 'merito' 
+                                                    ? (inc.catalogo_merito?.nombre || 'Mérito')
+                                                    : (inc.catalogo_demerito?.nombre || 'Demérito');
+                                                const severidadClass = inc.severidad === 'leve' ? 'badge-leve' 
+                                                    : inc.severidad === 'grave' ? 'badge-grave' 
+                                                    : inc.severidad === 'muy_grave' ? 'badge-muy-grave' : '';
+                                                const severidadText = inc.tipo === 'merito' ? 'Reconocimiento'
+                                                    : inc.severidad === 'leve' ? 'Leve'
+                                                    : inc.severidad === 'grave' ? 'Grave'
+                                                    : inc.severidad === 'muy_grave' ? 'Muy Grave' : '-';
+                                                
+                                                return `
+                                                    <tr>
+                                                        <td>${fecha}</td>
+                                                        <td>${tipoIcon} ${nombre}</td>
+                                                        <td>${inc.descripcion ? inc.descripcion.substring(0, 50) + (inc.descripcion.length > 50 ? '...' : '') : '-'}</td>
+                                                        <td><span class="badge ${severidadClass}">${severidadText}</span></td>
+                                                        <td>
+                                                            <button class="btn btn-secondary" onclick="verDetalleIncidencia('${inc.id}')" style="padding: 5px 10px; font-size: 11px; width: auto;">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : `
+                                <div class="alert alert-success" style="margin-top: 20px;">
+                                    <i class="fas fa-check-circle"></i>
+                                    <div>¡Excelente! No hay incidencias registradas para este estudiante.</div>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+                
+            } catch (err) {
+                console.error('Error cargando portal del padre:', err);
+                container.innerHTML = `
+                    <div class="card" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                        <h3>Error al cargar información</h3>
+                        <p style="color: #666;">Por favor recargue la página o contacte soporte.</p>
+                    </div>
+                `;
+            }
         }
 
         function getAdminContent() {
@@ -2906,30 +3913,131 @@
             if (activeLink) {
                 activeLink.classList.add('active');
             }
+            
+            // Cargar datos específicos de la sección
+            if (section === 'reportes') {
+                cargarDatosReportes();
+            } else if (section === 'admin') {
+                cargarDatosAdmin();
+            }
         }
 
         // Función de logout
-        function logout() {
+        async function logout() {
+            try {
+                // Cerrar sesión en Supabase Auth
+                await supabase.auth.signOut();
+                console.log('🚪 Sesión cerrada en Supabase');
+            } catch (err) {
+                console.error('Error al cerrar sesión:', err);
+            }
+            
+            // Limpiar estado del usuario
             currentUser = null;
+            selectedUserRole = null;
+            
+            // Ocultar aplicación principal
             const mainApp = document.getElementById('mainApp');
             mainApp.classList.remove('show');
+            
+            // Mostrar pantalla de login
             document.getElementById('loginScreen').style.display = 'flex';
+            
+            // Limpiar formularios
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
-            showSection('dashboard');
-        }
-
-        // Efectos visuales
-        document.addEventListener('DOMContentLoaded', function() {
-            // 🔒 FORZAR OCULTAMIENTO DE STEPS AL CARGAR
+            
+            // Resetear todos los steps
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('step1').classList.add('visible');
+            document.getElementById('step1').style.display = '';
+            
+            document.getElementById('step1b').classList.add('hidden');
+            document.getElementById('step1b').classList.remove('visible');
+            document.getElementById('step1b').style.display = '';
+            
             document.getElementById('step2').classList.add('hidden');
             document.getElementById('step2').classList.remove('visible');
+            document.getElementById('step2').style.display = '';
+            
             document.getElementById('step3').classList.add('hidden');
             document.getElementById('step3').classList.remove('visible');
             document.getElementById('step4').classList.add('hidden');
             document.getElementById('step4').classList.remove('visible');
-            document.getElementById('step1b').classList.add('hidden');
-            document.getElementById('step1b').classList.remove('visible');
+            
+            // Volver a la sección dashboard
+            showSection('dashboard');
+            
+            console.log('✅ Logout completado - Volviendo a selección de cuenta');
+        }
+
+        // Verificar si hay sesión activa al cargar la página
+        async function checkExistingSession() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session && session.user) {
+                    console.log('🔐 Sesión activa encontrada:', session.user.email);
+                    
+                    // Obtener datos del usuario desde la tabla users
+                    const { data: userData, error } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('email', session.user.email)
+                        .single();
+                    
+                    if (userData && !error) {
+                        // Definir permisos según el rol
+                        const rolePermissions = {
+                            'docente': ['incidencias', 'historial'],
+                            'tutor': ['incidencias', 'historial', 'reportes'],
+                            'auxiliar': ['incidencias', 'historial'],
+                            'toe': ['incidencias', 'historial', 'reportes'],
+                            'direccion': ['incidencias', 'historial', 'reportes'],
+                            'padre': ['historial'],
+                            'admin': ['incidencias', 'historial', 'reportes']
+                        };
+                        
+                        currentUser = {
+                            username: userData.dni || userData.email,
+                            email: userData.email,
+                            role: userData.role,
+                            name: userData.nombre_completo || 'Usuario',
+                            nombre: userData.nombre_completo,
+                            dni: userData.dni,
+                            id: userData.id,
+                            permissions: rolePermissions[userData.role] || ['historial'],
+                            isDemo: userData.email && userData.email.includes('.demo@')
+                        };
+                        
+                        selectedUserRole = userData.role;
+                        console.log('✅ Sesión restaurada para:', currentUser.name);
+                        login();
+                        return true;
+                    }
+                }
+            } catch (err) {
+                console.log('No hay sesión activa:', err.message);
+            }
+            return false;
+        }
+
+        // Efectos visuales
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Verificar sesión existente primero
+            const hasSession = await checkExistingSession();
+            
+            if (!hasSession) {
+                // 🔒 FORZAR OCULTAMIENTO DE STEPS AL CARGAR (solo si no hay sesión)
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step2').classList.remove('visible');
+                document.getElementById('step3').classList.add('hidden');
+                document.getElementById('step3').classList.remove('visible');
+                document.getElementById('step4').classList.add('hidden');
+                document.getElementById('step4').classList.remove('visible');
+                document.getElementById('step1b').classList.add('hidden');
+                document.getElementById('step1b').classList.remove('visible');
+            }
             
             // Configurar event listener del formulario de login
             document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -3067,12 +4175,14 @@
             const step1 = document.getElementById('step1');
             const step1b = document.getElementById('step1b');
             
-            // Ocultar paso 1
+            // Ocultar paso 1 y limpiar estilos inline
             step1.classList.remove('visible');
             step1.classList.add('hidden');
+            step1.style.display = '';
             
             // Mostrar paso 1b después de un breve delay
             setTimeout(() => {
+                step1b.style.display = '';
                 step1b.classList.remove('hidden');
                 step1b.classList.add('visible');
             }, 300);
@@ -3128,15 +4238,22 @@
             const step4 = document.getElementById('step4');
             const requestForm = document.getElementById('requestForm');
             
-            // Ocultar TODOS los pasos excepto step1
+            // Ocultar TODOS los pasos excepto step1 y limpiar estilos inline
             step1b.classList.remove('visible');
             step1b.classList.add('hidden');
+            step1b.style.display = '';
+            
             step2.classList.remove('visible');
             step2.classList.add('hidden');
+            step2.style.display = '';
+            
             step3.classList.remove('visible');
             step3.classList.add('hidden');
+            step3.style.display = '';
+            
             step4.classList.remove('visible');
             step4.classList.add('hidden');
+            step4.style.display = '';
             
             // Ocultar formulario de solicitud
             requestForm.classList.remove('visible');
@@ -3156,6 +4273,7 @@
             
             // Mostrar paso 1 después de un breve delay
             setTimeout(() => {
+                step1.style.display = '';
                 step1.classList.remove('hidden');
                 step1.classList.add('visible');
                 
@@ -3165,7 +4283,7 @@
             }, 300);
         }
 
-        // Función para mostrar el login demo
+        // Función para mostrar el formulario de login
         function showDemoLogin() {
             const roleText = {
                 'docente': 'Docente',
@@ -3176,19 +4294,6 @@
                 'padre': 'Padre/Madre',
                 'admin': 'Administrador del Sistema'
             };
-            
-            // Crear cuenta demo automáticamente según el rol seleccionado
-            const demoAccounts = {
-                'docente': { username: 'demo_docente', password: '123', display: 'demo_docente / 123' },
-                'tutor': { username: 'demo_tutor', password: '123', display: 'demo_tutor / 123' },
-                'auxiliar': { username: 'demo_auxiliar', password: '123', display: 'demo_auxiliar / 123' },
-                'toe': { username: 'demo_toe', password: '123', display: 'demo_toe / 123' },
-                'direccion': { username: 'demo_direccion', password: '123', display: 'demo_direccion / 123' },
-                'padre': { username: 'demo_padre', password: '123', display: 'demo_padre / 123' },
-                'admin': { username: 'demo_admin', password: '123', display: 'demo_admin / 123' }
-            };
-            
-            const demoAccount = demoAccounts[selectedUserRole];
             
             document.getElementById('roleText').textContent = roleText[selectedUserRole];
             
@@ -3208,21 +4313,13 @@
                 document.getElementById('activarCuentaLink').style.display = 'none';
                 document.getElementById('solicitarRegistroLink').style.display = 'none';
                 
-                // Auto-llenar los campos con las credenciales demo
-                document.getElementById('username').value = demoAccount.username;
-                document.getElementById('password').value = demoAccount.password;
+                // Limpiar los campos para que el usuario ingrese sus credenciales
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
                 
-                // Mostrar mensaje informativo sobre las credenciales demo
-                showLoginMessage(
-                    `<strong>🧪 MODO DEMO ACTIVADO</strong><br>
-                    Credenciales creadas automáticamente: <code>${demoAccount.display}</code><br>
-                    <small>Estas credenciales son temporales y solo para pruebas del sistema.</small>`, 
-                    'info'
-                );
-                
-                // Enfocar en el botón de iniciar sesión para facilitar el acceso
+                // Enfocar en el campo de usuario
                 setTimeout(() => {
-                    document.querySelector('button[type="submit"]').focus();
+                    document.getElementById('username').focus();
                 }, 500);
             }, 300);
         }
@@ -3620,11 +4717,21 @@
             step2.classList.remove('visible');
             step2.classList.add('hidden');
             
-            // Limpiar formulario de recuperación
+            // Limpiar formulario de recuperación y resetear estado
             document.getElementById('recuperar_dni').value = '';
+            document.getElementById('recuperar_nombre').value = '';
             document.getElementById('recuperarMessage').innerHTML = '';
-            document.getElementById('recuperarMessage').classList.remove('show');
+            document.getElementById('recuperarMessage').className = 'form-message';
             document.getElementById('step4b').style.display = 'none';
+            document.getElementById('step5').style.display = 'none';
+            window.usuarioRecuperar = null;
+            
+            // IMPORTANTE: Resetear el botón de verificar
+            const btnVerificar = document.getElementById('btnVerificarRecuperar');
+            if (btnVerificar) {
+                btnVerificar.disabled = false;
+                btnVerificar.innerHTML = '<i class="fas fa-search"></i> Buscar mi cuenta';
+            }
             
             // Mostrar step4 (recuperación)
             setTimeout(() => {
@@ -3639,30 +4746,57 @@
         // Función para volver al login desde recuperación
         function volverALogin() {
             const step4 = document.getElementById('step4');
+            const step1 = document.getElementById('step1');
+            const step1b = document.getElementById('step1b');
             const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3');
             
-            // Ocultar step4 y sus sub-steps
-            step4.classList.remove('visible');
-            step4.classList.add('hidden');
-            document.getElementById('step4b').style.display = 'none';
-            document.getElementById('step5').style.display = 'none';
+            // Resetear variables globales
+            selectedUserRole = null;
+            window.usuarioRecuperar = null;
             
-            // Limpiar campos
+            // Limpiar campos de recuperación
             document.getElementById('recuperar_dni').value = '';
             document.getElementById('recuperar_nombre').value = '';
             document.getElementById('email_verificar_recuperar').value = '';
             document.getElementById('recuperarMessage').innerHTML = '';
+            document.getElementById('recuperarMessage').className = 'form-message';
             document.getElementById('cambiarMessage').innerHTML = '';
-            window.usuarioRecuperar = null;
             
-            // Mostrar step2 (login)
+            // IMPORTANTE: Resetear el botón de verificar para que funcione de nuevo
+            const btnVerificar = document.getElementById('btnVerificarRecuperar');
+            if (btnVerificar) {
+                btnVerificar.disabled = false;
+                btnVerificar.innerHTML = '<i class="fas fa-search"></i> Buscar mi cuenta';
+            }
+            
+            // Ocultar sub-steps de recuperación
+            document.getElementById('step4b').style.display = 'none';
+            document.getElementById('step5').style.display = 'none';
+            
+            // Ocultar TODOS los steps y limpiar estilos inline
+            step4.classList.remove('visible');
+            step4.classList.add('hidden');
+            step4.style.display = '';
+            
+            step1b.classList.remove('visible');
+            step1b.classList.add('hidden');
+            step1b.style.display = '';
+            
+            step2.classList.remove('visible');
+            step2.classList.add('hidden');
+            step2.style.display = '';
+            
+            step3.classList.remove('visible');
+            step3.classList.add('hidden');
+            step3.style.display = '';
+            
+            // Mostrar step1 (selección de tipo de cuenta) después del delay
             setTimeout(() => {
-                step2.classList.remove('hidden');
-                step2.classList.add('visible');
-                setTimeout(() => {
-                    document.getElementById('username').focus();
-                }, 300);
-            }, 300);
+                step1.style.display = '';
+                step1.classList.remove('hidden');
+                step1.classList.add('visible');
+            }, 350);
         }
         
         // Función para verificar DNI o Nombre y mostrar hint de email
@@ -4583,50 +5717,9 @@
             }, 500);
         }
 
-        // Función para mostrar banner de cuenta demo
-        function showDemoBanner() {
-            // Crear el banner demo si no existe
-            let demoBanner = document.getElementById('demoBanner');
-            if (!demoBanner) {
-                demoBanner = document.createElement('div');
-                demoBanner.id = 'demoBanner';
-                demoBanner.className = 'demo-banner';
-                demoBanner.innerHTML = `
-                    <div class="demo-banner-content">
-                        <i class="fas fa-flask"></i>
-                        <span><strong>DEMO</strong> - Cuenta temporal</span>
-                        <button onclick="hideDemoBanner()" class="demo-banner-close" title="Cerrar">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `;
-                
-                // Insertar el banner al inicio del body
-                document.body.insertBefore(demoBanner, document.body.firstChild);
-            }
-            
-            // Ya no necesitamos agregar clase al body
-            // document.body.classList.add('demo-banner-active');
-            
-            // Mostrar el banner con animación
-            setTimeout(() => {
-                demoBanner.style.display = 'block';
-                demoBanner.classList.add('show');
-            }, 500);
-        }
+        // Función eliminada: showDemoBanner() - sistema ya no muestra banner DEMO
 
-        // Función para ocultar banner demo
-        function hideDemoBanner() {
-            const demoBanner = document.getElementById('demoBanner');
-            if (demoBanner) {
-                demoBanner.classList.remove('show');
-                // Ya no necesitamos quitar la clase del body
-                // document.body.classList.remove('demo-banner-active');
-                setTimeout(() => {
-                    demoBanner.style.display = 'none';
-                }, 400);
-            }
-        }
+        // Función eliminada: hideDemoBanner() - banner DEMO ya no se usa
 
         // Función para mostrar el formulario de solicitud
         function showRequestForm() {
@@ -4646,6 +5739,13 @@
                     ],
                     fields: `
                         <h6>Información Profesional</h6>
+                        <div class="form-group">
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_docente" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="docente">Docente</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Especialidad</label>
                             <select class="form-input" required>
@@ -4677,6 +5777,13 @@
                     ],
                     fields: `
                         <h6>Información de Tutoría</h6>
+                        <div class="form-group">
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_tutor" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="tutor">Tutor</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Grado y Sección asignada</label>
                             <select class="form-input" required>
@@ -4710,6 +5817,13 @@
                     fields: `
                         <h6>Información de Trabajo</h6>
                         <div class="form-group">
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_auxiliar" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="auxiliar">Auxiliar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Nivel asignado</label>
                             <select class="form-input" required>
                                 <option value="">Seleccione el nivel</option>
@@ -4740,6 +5854,13 @@
                     fields: `
                         <h6>Información Profesional TOE</h6>
                         <div class="form-group">
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_toe" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="toe">TOE</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Profesión</label>
                             <select class="form-input" required>
                                 <option value="">Seleccione su profesión</option>
@@ -4766,13 +5887,10 @@
                     fields: `
                         <h6>Información Directiva</h6>
                         <div class="form-group">
-                            <label class="form-label">Cargo</label>
-                            <select class="form-input" required>
-                                <option value="">Seleccione su cargo</option>
-                                <option value="director">Director(a)</option>
-                                <option value="subdirector">Subdirector(a)</option>
-                                <option value="coordinador">Coordinador(a) Académico</option>
-                                <option value="otro">Otro cargo directivo</option>
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_direccion" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="direccion">Dirección</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -4791,6 +5909,13 @@
                     ],
                     fields: `
                         <h6>Información del Estudiante</h6>
+                        <div class="form-group">
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_padre" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="padre">Padre/Madre</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Nombre completo del estudiante</label>
                             <input type="text" class="form-input" placeholder="Nombres y apellidos del hijo(a)" required>
@@ -4836,14 +5961,10 @@
                     fields: `
                         <h6>Información del Administrador</h6>
                         <div class="form-group">
-                            <label class="form-label">Cargo en la institución</label>
-                            <select class="form-input" required>
-                                <option value="">Seleccione su cargo</option>
-                                <option value="director">Director(a)</option>
-                                <option value="subdirector">Subdirector(a)</option>
-                                <option value="secretario">Secretario(a)</option>
-                                <option value="sistemas">Especialista en Sistemas</option>
-                                <option value="externo">Consultor Externo</option>
+                            <label class="form-label">Rol solicitado</label>
+                            <select class="form-input" id="rol_admin" required>
+                                <option value="">Seleccione el rol</option>
+                                <option value="admin">Administrador del Sistema</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -5412,117 +6533,192 @@
             }
         }
 
-        // Procesar envío del formulario de incidencia
-        function submitIncident(event) {
+        // Procesar envío del formulario de incidencia (REAL - Supabase)
+        async function submitIncident(event) {
             event.preventDefault();
             
+            // Verificar que hay estudiante seleccionado
+            if (!estudianteSeleccionado) {
+                alert('❌ Por favor seleccione un estudiante de la lista');
+                document.getElementById('studentSearch').focus();
+                return;
+            }
+            
             const tipoRegistro = document.getElementById('tipoRegistro').value;
-            const estudiante = document.getElementById('studentSearch').value;
-            const aula = document.getElementById('aulaSelect').value;
             const descripcion = document.getElementById('descripcionDetallada').value;
             const testigos = document.getElementById('testigos').value;
             
-            let incidentData = {
-                fecha: new Date().toISOString().split('T')[0],
-                estudiante: estudiante,
-                aula: aula,
-                descripcion: descripcion,
-                testigos: testigos,
-                registradoPor: currentUser?.name || 'Usuario desconocido'
+            if (!tipoRegistro) {
+                alert('❌ Por favor seleccione el tipo de registro (Mérito o Demérito)');
+                return;
+            }
+            
+            // Preparar datos de la incidencia
+            let incidenciaData = {
+                estudianteId: estudianteSeleccionado.id,
+                tipo: tipoRegistro,
+                descripcion: descripcion + (testigos ? `\n\nTestigos: ${testigos}` : ''),
+                catalogoMeritoId: null,
+                catalogoDemeritoId: null,
+                severidad: null,
+                codigo: null
             };
 
             if (tipoRegistro === 'merito') {
-                const merito = document.getElementById('meritoSelect').value;
-                if (!merito) {
+                const meritoSelect = document.getElementById('meritoSelect');
+                const meritoValue = meritoSelect.value;
+                if (!meritoValue) {
                     alert('Por favor seleccione un mérito');
                     return;
                 }
-                incidentData.tipo = 'merito';
-                incidentData.codigo = merito;
-                incidentData.severidad = 'reconocimiento';
+                // Buscar el ID del mérito en el catálogo
+                const meritos = await getCatalogoMeritos();
+                const merito = meritos.find(m => m.codigo === meritoValue.split('-')[1] || m.codigo === meritoValue);
+                if (merito) {
+                    incidenciaData.catalogoMeritoId = merito.id;
+                    incidenciaData.codigo = merito.codigo;
+                }
                 
-                alert(`✅ MÉRITO REGISTRADO EXITOSAMENTE\n\n` +
-                      `👨‍🎓 Estudiante: ${estudiante}\n` +
-                      `🏫 Aula: ${aula}\n` +
-                      `🏆 Mérito: ${document.getElementById('meritoSelect').options[document.getElementById('meritoSelect').selectedIndex].text}\n\n` +
-                      `📝 Este reconocimiento será registrado en el expediente del estudiante y podrá ser considerado para:\n` +
-                      `• Carta de felicitación de Dirección\n` +
-                      `• Mención pública\n` +
-                      `• Diploma de reconocimiento\n\n` +
-                      `✅ El padre de familia será notificado del reconocimiento.`);
-                      
             } else if (tipoRegistro === 'demerito') {
-                const demerito = document.getElementById('demeritoSelect').value;
-                if (!demerito) {
+                const demeritoSelect = document.getElementById('demeritoSelect');
+                const demeritoValue = demeritoSelect.value;
+                if (!demeritoValue) {
                     alert('Por favor seleccione una falta');
                     return;
                 }
                 
-                const selectedOption = document.getElementById('demeritoSelect').options[document.getElementById('demeritoSelect').selectedIndex];
-                const baseSeverity = selectedOption.getAttribute('data-severity');
+                const selectedOption = demeritoSelect.options[demeritoSelect.selectedIndex];
+                const severidad = selectedOption.getAttribute('data-severity');
                 
-                // Calcular severidad final automáticamente
-                const studentName = estudiante.toLowerCase().replace(/\s+/g, '_');
-                const studentHistory = studentIncidentHistory[studentName] || [];
-                const currentWeekIncidents = countIncidentsInCurrentWeek(studentHistory);
-                const currentBimesterIncidents = countIncidentsInCurrentBimester(studentHistory);
-                
-                let finalSeverity = baseSeverity;
-                let actionRequired = '';
-                
-                if (baseSeverity === 'leve') {
-                    if (currentWeekIncidents >= 2) {
-                        finalSeverity = 'alerta';
-                        actionRequired = 'ALERTA A TUTOR/PADRE - Llamada inmediata';
-                    } else if (currentBimesterIncidents >= 4) {
-                        finalSeverity = 'toe';
-                        actionRequired = 'CITACIÓN FORMAL EN TOE';
-                    } else {
-                        actionRequired = 'Amonestación verbal + anotación en agenda + firma del padre';
-                    }
-                } else if (baseSeverity === 'grave') {
-                    actionRequired = 'Citación formal del apoderado en TOE + acta de compromiso';
-                } else if (baseSeverity === 'muy_grave') {
-                    actionRequired = 'Atención inmediata en TOE/DIRECCIÓN + citación urgente + activar protocolos';
+                // Buscar el ID del demérito en el catálogo
+                const demeritos = await getCatalogoDemeritros();
+                const demerito = demeritos.find(d => d.codigo === demeritoValue.split('-')[1] || d.codigo === demeritoValue);
+                if (demerito) {
+                    incidenciaData.catalogoDemeritoId = demerito.id;
+                    incidenciaData.codigo = demerito.codigo;
+                    incidenciaData.severidad = demerito.severidad || severidad;
+                } else {
+                    incidenciaData.severidad = severidad;
                 }
-                
-                incidentData.tipo = 'demerito';
-                incidentData.codigo = demerito;
-                incidentData.severidad = finalSeverity;
-                incidentData.accionRequerida = actionRequired;
-                
-                // Actualizar historial simulado del estudiante
-                if (!studentIncidentHistory[studentName]) {
-                    studentIncidentHistory[studentName] = [];
-                }
-                studentIncidentHistory[studentName].push({
-                    date: incidentData.fecha,
-                    type: demerito,
-                    severity: baseSeverity,
-                    description: descripcion.substring(0, 50) + '...'
-                });
-                
-                alert(`⚠️ DEMÉRITO REGISTRADO EXITOSAMENTE\n\n` +
-                      `👨‍🎓 Estudiante: ${estudiante}\n` +
-                      `🏫 Aula: ${aula}\n` +
-                      `❌ Falta: ${selectedOption.text}\n` +
-                      `📊 Severidad Final: ${getSeverityLabel(finalSeverity).toUpperCase()}\n\n` +
-                      `🚨 ACCIÓN REQUERIDA:\n${actionRequired}\n\n` +
-                      `📋 FLUJO SIGUIENTE:\n` +
-                      `1. Notificación automática al padre\n` +
-                      `2. ${finalSeverity === 'leve' ? 'Registro en agenda del estudiante' : 'Derivación según protocolo'}\n` +
-                      `3. Seguimiento por ${finalSeverity.includes('toe') || finalSeverity === 'grave' || finalSeverity === 'muy_grave' ? 'TOE/Dirección' : 'Tutor de aula'}`);
             }
             
-            // Reset del formulario
-            document.getElementById('incidenciaForm').reset();
-            toggleMeritosDemeritosSections();
+            // Mostrar loading
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            submitBtn.disabled = true;
             
-            // Volver al dashboard
-            setTimeout(() => {
-                showSection('dashboard');
-            }, 2000);
+            // Registrar en Supabase
+            const resultado = await registrarIncidencia(incidenciaData);
+            
+            // Restaurar botón
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            
+            if (resultado.success) {
+                const tipoTexto = tipoRegistro === 'merito' ? '🏆 MÉRITO' : '⚠️ DEMÉRITO';
+                alert(`✅ ${tipoTexto} REGISTRADO EXITOSAMENTE\n\n` +
+                      `👨‍🎓 Estudiante: ${estudianteSeleccionado.nombre_completo}\n` +
+                      `🏫 Aula: ${estudianteSeleccionado.grado}°${estudianteSeleccionado.seccion}\n\n` +
+                      `📝 La incidencia ha sido guardada en el sistema.\n` +
+                      `📧 El padre de familia será notificado.`);
+                
+                // Reset del formulario
+                document.getElementById('incidenciaForm').reset();
+                clearStudentSelection();
+                toggleMeritosDemeritosSections();
+                
+                // Actualizar estadísticas y historial
+                await actualizarDashboardStats();
+                await renderizarHistorial();
+                
+                // Volver al dashboard
+                setTimeout(() => {
+                    showSection('dashboard');
+                }, 1500);
+            } else {
+                alert(`❌ Error al registrar incidencia:\n${resultado.error}\n\nPor favor intente nuevamente.`);
+            }
         }
+
+        // Funciones para el buscador de estudiantes
+        let searchTimeout = null;
+        
+        async function handleStudentSearch(query) {
+            const resultsContainer = document.getElementById('studentSearchResults');
+            
+            // Limpiar timeout anterior
+            if (searchTimeout) clearTimeout(searchTimeout);
+            
+            if (!query || query.length < 2) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Mostrar loading
+            resultsContainer.innerHTML = '<div class="autocomplete-loading"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+            resultsContainer.style.display = 'block';
+            
+            // Debounce de 300ms
+            searchTimeout = setTimeout(async () => {
+                const estudiantes = await buscarEstudiantes(query);
+                
+                if (estudiantes.length === 0) {
+                    resultsContainer.innerHTML = '<div class="autocomplete-empty">No se encontraron estudiantes</div>';
+                } else {
+                    resultsContainer.innerHTML = estudiantes.map(est => `
+                        <div class="autocomplete-item" onclick="selectStudent(${JSON.stringify(est).replace(/"/g, '&quot;')})">
+                            <div class="student-name">${est.nombre_completo}</div>
+                            <div class="student-info">
+                                ${est.grado}° ${est.seccion} - ${est.nivel.charAt(0).toUpperCase() + est.nivel.slice(1)}
+                                ${est.dni ? ` | DNI: ${est.dni}` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }, 300);
+        }
+        
+        function selectStudent(estudiante) {
+            estudianteSeleccionado = estudiante;
+            
+            // Actualizar UI
+            document.getElementById('studentSearch').value = estudiante.nombre_completo;
+            document.getElementById('studentId').value = estudiante.id;
+            document.getElementById('studentSearchResults').style.display = 'none';
+            
+            // Mostrar info del estudiante seleccionado
+            document.getElementById('studentSelectedInfo').style.display = 'block';
+            document.getElementById('studentSelectedName').textContent = 
+                `${estudiante.nombre_completo} - ${estudiante.grado}°${estudiante.seccion}`;
+            
+            // Auto-seleccionar el aula
+            const aulaValue = `${estudiante.grado}S${estudiante.seccion}`;
+            const aulaSelect = document.getElementById('aulaSelect');
+            for (let option of aulaSelect.options) {
+                if (option.value === aulaValue) {
+                    aulaSelect.value = aulaValue;
+                    break;
+                }
+            }
+        }
+        
+        function clearStudentSelection() {
+            estudianteSeleccionado = null;
+            document.getElementById('studentSearch').value = '';
+            document.getElementById('studentId').value = '';
+            document.getElementById('studentSelectedInfo').style.display = 'none';
+            document.getElementById('aulaSelect').value = '';
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const searchContainer = document.querySelector('.form-group[style*="position: relative"]');
+            const resultsContainer = document.getElementById('studentSearchResults');
+            if (searchContainer && resultsContainer && !searchContainer.contains(e.target)) {
+                resultsContainer.style.display = 'none';
+            }
+        });
 
         // ==================== FUNCIONES ADMINISTRATIVAS ADICIONALES ====================
         
