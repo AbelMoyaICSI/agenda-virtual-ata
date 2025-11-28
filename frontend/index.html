@@ -10882,32 +10882,61 @@
             }, { passive: true, once: false });
         });
         
-        // ===== FUNCIÓN PARA REPRODUCIR DING - MEJORADA =====
+        // ===== FUNCIÓN PARA REPRODUCIR DING - MEJORADA CON FALLBACK =====
+        // Sonido DING en Base64 (muy corto, tipo campana)
+        const DING_SOUND_BASE64 = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+dmIyAdnd4hpGbop2WjH52cHN9ipafopmPg3ZtcHiEkpqgm5GGfXJvd4OQmp+amY2Bf3V0eoaSmJ2blYuCfHd4f4qVm5qWkIZ+eXl+iZSamp2XjYN9eXp/iZOYmpiTioB7eHuBi5WZmpeSiIB6eHyDjJaYl5KMhH56e4GHkZaXlZGJgXx5fIKKkpWWk46HgHt5fYSMkpSUkYyFf3p6foaOkpOSkYuEfnt6gIePkpKQjoiCfXt7gYiPkZCPjIaDfnt7goqPkI+NioSAe3t9hYuOjo2LhoJ+e3uAh4yNjIuIhIF9e3yDiYuLioiFgn58fIGGiouKiYaCf3x8gYaJioqIhYJ/fHyChomJiIeFgn99fIKGiImIh4WCf318goaIiIeGhIJ/fX2DhoeHhoWDgX59fYOFhoeGhYOBf359g4WGhoWEg4F/fn6DhYaFhYSDgX9+foOFhYWEhIOBf35+g4WFhYSEgoB/fn6DhIWEhISCgH9+foOEhISEg4KAf35+g4SEhIODgoB/fn+DhISEg4OCgH9+f4OEhIODgoGAf39/g4ODg4OCgYB/f3+Dg4ODgoKBgH9/f4ODg4OCgoGAf3+Ag4ODg4KCgYB/f4CDg4OCgoKBgH9/gIODgoKCgoGAf3+Ag4KCgoKCgYB/gICDgoKCgoKBgH+AgIOCgoKCgoGAgICAgYKCgoKCgYCAgICBgoKCgoKBgICAgIGCgoKCgoGAgICAgYKCgoKCgYCAgICBgoKCgoGBgICAgIGCgoKCgYGAgICAgYKCgoKBgYCAgICBgoKCgoGBgICAgIGCgoKBgYGAgICAgYKCgoGBgYCAgICBgoKCgYGBgICAgIGCgoKBgYGAgICAgYKCgYGBgYCAgICBgoKBgYGBgICAgIGCgoGBgYGAgICAgYKCgYGBgYCAgICBgoGBgYGBgICAgIGCgYGBgYGAgICAgYKBgYGBgYCAgICBgoGBgYGBgICAgIGBgYGBgYGAgICAgYGBgYGBgYCAgICBgYGBgYGBgICAgIGBgYGBgYGAgICAgYGBgYGBgYCAgICBgYGBgYGBgICAgIGBgYGBgYCAgICAgYGBgYGBgICAgICBgYGBgYGAgICAgIGBgYGBgYCAgICAgYGBgYGAgICAgICBgYGBgYCAgICAgIGBgYGBgICAgICAgYGBgYCAgICAgICBgYGBgICAgICAgIGBgYCAgICAgICBgYGBgICAgICAgIGBgYCAgICAgICAgYGAgICAgICAgIGBgICAgICAgICBgYCAgICAgICAgYGAgICAgICAgIGAgICAgICAgICBgICAgICAgICBgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+        
+        // Audio element como fallback
+        let dingAudio = null;
+        
+        function crearDingAudio() {
+            if (!dingAudio) {
+                dingAudio = new Audio(DING_SOUND_BASE64);
+                dingAudio.volume = 0.7;
+                // Pre-cargar
+                dingAudio.load();
+            }
+            return dingAudio;
+        }
+        
         function reproducirSonidoNotificacion() {
             console.log('🔔 === INTENTANDO REPRODUCIR DING ===');
-            console.log('🔔 Estado:', { userHasInteracted, audioContextReady, audioContextState: audioContext?.state });
             
-            // Asegurar que AudioContext existe y está activo
-            if (!audioContext) {
-                try {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                } catch(e) {
-                    console.log('No se pudo crear AudioContext:', e);
-                }
-            }
+            let sonidoReproducido = false;
             
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            
-            // Intentar reproducir sonido
+            // MÉTODO 1: Usar Audio HTML5 (más compatible)
             try {
-                if (audioContext && audioContext.state === 'running') {
+                const audio = crearDingAudio();
+                audio.currentTime = 0;
+                const playPromise = audio.play();
+                if (playPromise) {
+                    playPromise.then(() => {
+                        console.log('🔔✅ DING reproducido con Audio HTML5!');
+                        sonidoReproducido = true;
+                    }).catch(e => {
+                        console.log('🔔⚠️ Audio HTML5 bloqueado:', e.message);
+                    });
+                }
+            } catch(e) {
+                console.log('🔔 Audio HTML5 falló:', e);
+            }
+            
+            // MÉTODO 2: AudioContext (más control pero requiere interacción previa)
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                if (audioContext.state === 'running') {
                     const ctx = audioContext;
                     const now = ctx.currentTime;
                     
-                    // Crear osciladores para un DING tipo campana
-                    const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6 (acorde mayor)
+                    // Crear osciladores para un DING tipo campana más fuerte
+                    const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6
                     
                     frequencies.forEach((freq, i) => {
                         const osc = ctx.createOscillator();
@@ -10919,44 +10948,29 @@
                         osc.type = 'sine';
                         osc.frequency.value = freq;
                         
-                        // Envolvente ADSR para sonido de campana
                         const startTime = now + (i * 0.02);
                         gain.gain.setValueAtTime(0, startTime);
-                        gain.gain.linearRampToValueAtTime(0.5, startTime + 0.01); // Attack rápido, más volumen
-                        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8); // Decay lento
+                        gain.gain.linearRampToValueAtTime(0.6, startTime + 0.01); // Más volumen
+                        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8);
                         
                         osc.start(startTime);
                         osc.stop(startTime + 1);
                     });
                     
-                    console.log('🔔✅ DING reproducido exitosamente!');
-                } else {
-                    console.log('🔔⚠️ AudioContext no está running, estado:', audioContext?.state);
-                    // Intentar con vibración en móvil
-                    if ('vibrate' in navigator) {
-                        navigator.vibrate([100, 50, 100]);
-                        console.log('📳 Vibración activada');
-                    }
+                    console.log('🔔✅ DING AudioContext reproducido!');
+                    sonidoReproducido = true;
                 }
-            } catch (err) {
-                console.error('❌ Error reproduciendo sonido:', err);
+            } catch(e) {
+                console.log('🔔 AudioContext falló:', e);
             }
             
-            // Mostrar notificación del navegador si está permitida
-            if (Notification.permission === 'granted') {
-                try {
-                    new Notification('📬 Nueva Notificación', {
-                        body: 'Has recibido una nueva notificación',
-                        icon: './assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
-                        badge: './assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
-                        tag: 'ata-notification',
-                        renotify: true,
-                        vibrate: [200, 100, 200]
-                    });
-                } catch(e) {
-                    console.log('Notificación fallida:', e);
-                }
+            // MÉTODO 3: Vibración en móvil
+            if ('vibrate' in navigator) {
+                navigator.vibrate([150, 50, 150, 50, 150]);
+                console.log('📳 Vibración activada');
             }
+            
+            return sonidoReproducido;
         }
         
         // Pedir permiso de notificaciones al cargar
