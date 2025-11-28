@@ -1,21 +1,31 @@
 // ============================================================================
 // EDGE FUNCTION: Enviar Web Push Notifications
 // Agenda Virtual ATA - I.E. 80002 Antonio Torres Araujo
-// Usando @negrel/webpush - librería compatible con Deno
+// Usando @negrel/webpush - librería nativa Deno
 // ============================================================================
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { 
-  ApplicationServer, 
-  type PushSubscription as WebPushSubscription,
-  generateVAPIDKeys,
-  importVAPIDKeys
-} from "jsr:@negrel/webpush@0.5.0"
+import * as webpush from "jsr:@negrel/webpush@0.5.0"
 
-// VAPID Keys - Las mismas que en el frontend
-const VAPID_PUBLIC_KEY = 'BPOLy4-xme3o_x7oKHjjqkl4SNbICUfWZm5MTWAaqZnrTFyi_T6q7BUZPzDOfxwlYfUISxJU8KbgihmN8373RMU';
-const VAPID_PRIVATE_KEY = '-tIOH_C4F106Uq-Ev4mbqhGadV8qajcd27PWd7R5Tfg';
+// VAPID Keys en formato JWK - generadas para este proyecto
+// IMPORTANTE: Estas claves deben coincidir con applicationServerKey en el frontend
+const VAPID_KEYS_JWK = {
+  publicKey: {
+    kty: "EC",
+    crv: "P-256",
+    x: "Yvma7OqqY0KxPcP4Iw6LUfsKvEF6p9JrcCpXmu4WMpo",
+    y: "dZJO9BlcdyNrcMeGomBMVC64DvCUDAT4ApWM5i1qETY"
+  },
+  privateKey: {
+    kty: "EC", 
+    crv: "P-256",
+    x: "Yvma7OqqY0KxPcP4Iw6LUfsKvEF6p9JrcCpXmu4WMpo",
+    y: "dZJO9BlcdyNrcMeGomBMVC64DvCUDAT4ApWM5i1qETY",
+    d: "Gm7tqf0RT-5wn5kecqI12bOar-ZMIPw_vcdwAjw-6Do"
+  }
+};
+
 const VAPID_SUBJECT = 'mailto:agenda.ata@gmail.com';
 
 interface PushPayload {
@@ -35,16 +45,19 @@ interface DBSubscription {
   activa: boolean;
 }
 
-// Inicializar Application Server (singleton)
-let appServer: ApplicationServer | null = null;
+// Singleton para Application Server
+let appServer: webpush.ApplicationServer | null = null;
 
-async function getAppServer(): Promise<ApplicationServer> {
+async function getAppServer(): Promise<webpush.ApplicationServer> {
   if (!appServer) {
-    const vapidKeys = await importVAPIDKeys({
-      publicKey: VAPID_PUBLIC_KEY,
-      privateKey: VAPID_PRIVATE_KEY
+    // Importar claves VAPID desde JWK
+    const vapidKeys = await webpush.importVapidKeys(VAPID_KEYS_JWK);
+    
+    // Crear Application Server usando el método estático .new()
+    appServer = await webpush.ApplicationServer.new({
+      contactInformation: VAPID_SUBJECT,
+      vapidKeys: vapidKeys,
     });
-    appServer = new ApplicationServer(vapidKeys, VAPID_SUBJECT);
   }
   return appServer;
 }
@@ -126,41 +139,39 @@ Deno.serve(async (req) => {
 
     for (const sub of subscriptions as DBSubscription[]) {
       try {
-        // Convertir a formato WebPush
-        const webPushSub: WebPushSubscription = {
+        // Crear suscriptor desde la suscripción almacenada
+        const subscriber = server.subscribe({
           endpoint: sub.endpoint,
           keys: {
             p256dh: sub.p256dh,
             auth: sub.auth
           }
-        };
+        });
 
-        // Enviar push
-        const response = await server.pushTextMessage(webPushSub, notificationPayload, {
+        // Enviar mensaje push
+        await subscriber.pushTextMessage(notificationPayload, {
           ttl: 86400, // 24 horas
           urgency: "high"
         });
 
-        if (response.ok) {
-          console.log(`✅ Push enviado a: ${sub.id}`);
-          sent++;
-        } else {
-          const status = response.status;
-          console.error(`❌ Error ${status} enviando a ${sub.id}`);
-          failed++;
-          
-          // Si es 410 (Gone) o 404, desactivar suscripción
-          if (status === 410 || status === 404) {
-            await supabase
-              .from('push_subscriptions')
-              .update({ activa: false })
-              .eq('id', sub.id);
-            console.log(`🗑️ Suscripción desactivada: ${sub.id}`);
-          }
-        }
+        console.log(`✅ Push enviado a: ${sub.id}`);
+        sent++;
+        
       } catch (pushError: any) {
-        console.error(`❌ Error con ${sub.id}:`, pushError.message);
+        console.error(`❌ Error enviando a ${sub.id}:`, pushError.message);
         failed++;
+        
+        // Si el error indica suscripción inválida, desactivar
+        if (pushError.message?.includes('410') || 
+            pushError.message?.includes('404') ||
+            pushError.message?.includes('gone') ||
+            pushError.isGone?.()) {
+          await supabase
+            .from('push_subscriptions')
+            .update({ activa: false })
+            .eq('id', sub.id);
+          console.log(`🗑️ Desactivando suscripción inválida: ${sub.id}`);
+        }
       }
     }
 
