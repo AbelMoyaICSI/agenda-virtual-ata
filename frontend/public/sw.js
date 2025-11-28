@@ -108,28 +108,38 @@ self.addEventListener('push', (event) => {
   
   console.log('🔔 Mostrando notificación:', data.title);
   
+  // Notificar a todos los clientes activos para que reproduzcan el DING
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon || '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
-      badge: data.badge || '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
-      tag: data.tag || 'agenda-notification',
-      requireInteraction: data.requireInteraction !== false,
-      vibrate: data.vibrate || [200, 100, 200, 100, 200],
-      silent: false, // IMPORTANTE: Asegurar que NO sea silenciosa - usa sonido del sistema
-      renotify: true, // Notificar aunque haya una con el mismo tag
-      data: data.data || { url: '/' },
-      actions: [
-        {
-          action: 'open',
-          title: 'Ver ahora'
-        },
-        {
-          action: 'close',
-          title: 'Cerrar'
-        }
-      ]
-    })
+    Promise.all([
+      // 1. Mostrar notificación del sistema
+      self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: data.icon || '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+        badge: data.badge || '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+        tag: 'ata-' + Date.now(), // Tag único para que siempre suene
+        requireInteraction: data.requireInteraction !== false,
+        vibrate: [200, 100, 200, 100, 200],
+        silent: false,
+        renotify: true,
+        data: data.data || { url: '/' },
+        actions: [
+          { action: 'open', title: 'Ver ahora' },
+          { action: 'close', title: 'Cerrar' }
+        ]
+      }),
+      
+      // 2. Enviar mensaje a clientes para reproducir DING
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'PUSH_RECEIVED',
+            title: data.title,
+            body: data.body,
+            playSound: true
+          });
+        });
+      })
+    ])
   );
 });
 

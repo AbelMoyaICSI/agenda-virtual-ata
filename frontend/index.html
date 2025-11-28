@@ -1146,31 +1146,60 @@
         .table-container {
             background: white;
             border-radius: 12px;
-            overflow: hidden;
+            overflow-x: auto; /* IMPORTANTE: Scroll horizontal en móvil */
+            -webkit-overflow-scrolling: touch;
             box-shadow: var(--shadow-light);
             margin-bottom: 25px;
+            max-width: 100%;
         }
 
         .table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 500px; /* Mínimo para que se vea bien */
         }
 
         .table th {
             background: var(--color-ata-verde);
             color: white;
-            padding: 16px;
+            padding: 12px 10px;
             text-align: left;
             font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
         }
 
         .table td {
-            padding: 16px;
+            padding: 12px 10px;
             border-bottom: 1px solid #e9ecef;
+            font-size: 13px;
         }
 
         .table tr:hover {
             background: #f8f9fa;
+        }
+        
+        /* Responsive para tablas en móvil */
+        @media (max-width: 768px) {
+            .table-container {
+                margin-left: -10px;
+                margin-right: -10px;
+                border-radius: 8px;
+            }
+            
+            .table {
+                min-width: 450px;
+            }
+            
+            .table th, .table td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+            
+            .table td button {
+                padding: 6px 10px !important;
+                font-size: 11px !important;
+            }
         }
 
         /* Footer */
@@ -11028,6 +11057,19 @@
                 
                 console.log('✅ Service Worker registrado:', registration.scope);
                 swRegistration = registration;
+                
+                // Escuchar mensajes del Service Worker (para reproducir DING)
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    console.log('📩 Mensaje del SW:', event.data);
+                    if (event.data && event.data.type === 'PUSH_RECEIVED' && event.data.playSound) {
+                        console.log('🔔 Push recibido - reproduciendo DING');
+                        reproducirSonidoNotificacion();
+                        // También mostrar toast visual
+                        if (typeof mostrarNotificacionVisual === 'function') {
+                            mostrarNotificacionVisual(event.data.title, event.data.body);
+                        }
+                    }
+                });
                 
                 // Esperar a que el SW esté activo
                 if (registration.installing) {
