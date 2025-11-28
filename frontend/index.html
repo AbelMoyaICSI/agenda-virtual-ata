@@ -1781,11 +1781,62 @@
             border-bottom: 8px solid var(--color-ata-verde);
         }
         
-        /* Responsive dropdown */
-        @media (max-width: 480px) {
+        /* Responsive dropdown - CORREGIDO PARA MÓVILES */
+        @media (max-width: 768px) {
             .notification-dropdown {
+                position: fixed !important;
+                top: 70px !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%);
+                width: calc(100vw - 30px);
+                max-width: 360px;
+            }
+            
+            .notification-dropdown::before {
+                display: none;
+            }
+            
+            .support-dropdown {
+                position: fixed !important;
+                top: 70px !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%);
+                width: calc(100vw - 30px);
+                max-width: 350px;
+            }
+            
+            .support-dropdown::before {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .notification-dropdown,
+            .support-dropdown {
                 width: calc(100vw - 20px);
-                right: -60px;
+                max-width: none;
+                left: 50% !important;
+                transform: translateX(-50%);
+            }
+            
+            .notification-item {
+                padding: 10px 12px;
+            }
+            
+            .notification-item-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+            
+            .notification-item-title {
+                font-size: 13px;
+            }
+            
+            .notification-item-desc {
+                font-size: 11px;
             }
         }
         
@@ -10789,104 +10840,136 @@
         let notificacionesUsuario = []; // Para usuarios no-admin
         let audioContextReady = false;
         let audioContext = null;
+        let userHasInteracted = false;
         
-        // ===== SISTEMA DE SONIDO DING - GARANTIZADO =====
+        // ===== SISTEMA DE SONIDO DING - MEJORADO PARA MÓVILES =====
+        // Detectar interacción del usuario (requerido por navegadores móviles)
+        function marcarInteraccionUsuario() {
+            if (!userHasInteracted) {
+                userHasInteracted = true;
+                console.log('👆 Usuario ha interactuado - sonido habilitado');
+                initAudioContext();
+            }
+        }
+        
         // Inicializar AudioContext al primer click/touch
         function initAudioContext() {
-            if (audioContextReady) return;
+            if (audioContextReady && audioContext) return;
             try {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                // Crear y tocar un nodo silencioso para "desbloquear" el audio
+                const silentBuffer = audioContext.createBuffer(1, 1, 22050);
+                const source = audioContext.createBufferSource();
+                source.buffer = silentBuffer;
+                source.connect(audioContext.destination);
+                source.start();
                 audioContextReady = true;
-                console.log('🔊 AudioContext listo');
+                console.log('🔊 AudioContext inicializado y desbloqueado');
             } catch(e) {
                 console.log('Error creando AudioContext:', e);
             }
         }
         
-        // Evento de interacción - requerido por navegadores
-        ['click', 'touchstart', 'keydown'].forEach(evt => {
+        // Eventos de interacción - requerido por navegadores móviles
+        ['click', 'touchstart', 'touchend', 'keydown', 'mousedown'].forEach(evt => {
             document.addEventListener(evt, () => {
-                initAudioContext();
+                marcarInteraccionUsuario();
                 if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
+                    audioContext.resume().then(() => {
+                        console.log('🔊 AudioContext resumed');
+                    });
                 }
-            }, { passive: true });
+            }, { passive: true, once: false });
         });
         
-        // ===== FUNCIÓN PARA REPRODUCIR DING =====
+        // ===== FUNCIÓN PARA REPRODUCIR DING - MEJORADA =====
         function reproducirSonidoNotificacion() {
             console.log('🔔 === INTENTANDO REPRODUCIR DING ===');
+            console.log('🔔 Estado:', { userHasInteracted, audioContextReady, audioContextState: audioContext?.state });
             
-            // Asegurar que AudioContext existe
-            initAudioContext();
+            // Asegurar que AudioContext existe y está activo
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch(e) {
+                    console.log('No se pudo crear AudioContext:', e);
+                }
+            }
+            
             if (audioContext && audioContext.state === 'suspended') {
                 audioContext.resume();
             }
             
-            // MÉTODO 1: Oscillator (funciona 100% sin archivos externos)
+            // Intentar reproducir sonido
             try {
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext && audioContext.state === 'running') {
+                    const ctx = audioContext;
+                    const now = ctx.currentTime;
+                    
+                    // Crear osciladores para un DING tipo campana
+                    const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6 (acorde mayor)
+                    
+                    frequencies.forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        
+                        // Envolvente ADSR para sonido de campana
+                        const startTime = now + (i * 0.02);
+                        gain.gain.setValueAtTime(0, startTime);
+                        gain.gain.linearRampToValueAtTime(0.5, startTime + 0.01); // Attack rápido, más volumen
+                        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8); // Decay lento
+                        
+                        osc.start(startTime);
+                        osc.stop(startTime + 1);
+                    });
+                    
+                    console.log('🔔✅ DING reproducido exitosamente!');
+                } else {
+                    console.log('🔔⚠️ AudioContext no está running, estado:', audioContext?.state);
+                    // Intentar con vibración en móvil
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([100, 50, 100]);
+                        console.log('📳 Vibración activada');
+                    }
                 }
-                
-                const ctx = audioContext;
-                const now = ctx.currentTime;
-                
-                // Crear osciladores para un DING tipo campana
-                const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6 (acorde mayor)
-                
-                frequencies.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    
-                    // Envolvente ADSR para sonido de campana
-                    const startTime = now + (i * 0.02);
-                    gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01); // Attack rápido
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8); // Decay lento
-                    
-                    osc.start(startTime);
-                    osc.stop(startTime + 1);
-                });
-                
-                console.log('🔔✅ DING reproducido con oscillator!');
-                
             } catch (err) {
-                console.error('❌ Error oscillator:', err);
-                // Método 2: Beep simple del sistema
-                try {
-                    const beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU' + Array(300).join('77+9'));
-                    beep.volume = 1;
-                    beep.play().catch(e => console.log('Error beep:', e));
-                } catch(e) {
-                    console.log('Beep también falló:', e);
-                }
+                console.error('❌ Error reproduciendo sonido:', err);
             }
             
-            // También mostrar notificación del navegador si está permitida
+            // Mostrar notificación del navegador si está permitida
             if (Notification.permission === 'granted') {
-                new Notification('📬 Nueva Notificación', {
-                    body: 'Has recibido una nueva notificación',
-                    icon: 'img/logo.png',
-                    silent: false
-                });
+                try {
+                    new Notification('📬 Nueva Notificación', {
+                        body: 'Has recibido una nueva notificación',
+                        icon: './assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+                        badge: './assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+                        tag: 'ata-notification',
+                        renotify: true,
+                        vibrate: [200, 100, 200]
+                    });
+                } catch(e) {
+                    console.log('Notificación fallida:', e);
+                }
             }
         }
         
         // Pedir permiso de notificaciones al cargar
         if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
+            Notification.requestPermission().then(permission => {
+                console.log('📢 Permiso de notificaciones:', permission);
+            });
         }
         
         // ===== PRUEBA DE SONIDO (llamar desde consola: probarSonido()) =====
         window.probarSonido = function() {
             console.log('🔊 Probando sonido manualmente...');
+            marcarInteraccionUsuario();
             reproducirSonidoNotificacion();
             return 'Sonido enviado - revisa si escuchaste el DING';
         };
@@ -11205,122 +11288,171 @@
             }
         }
         
-        // ===== SUSCRIPCIÓN EN TIEMPO REAL (SUPABASE REALTIME) =====
+        // ===== SUSCRIPCIÓN EN TIEMPO REAL (SUPABASE REALTIME) - MEJORADO =====
+        let canalesActivos = [];
+        
         function iniciarSuscripcionesRealtime() {
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.log('❌ No hay usuario para suscripciones realtime');
+                return;
+            }
             
             const role = currentUser.role?.toLowerCase();
             const esAdmin = role === 'admin' || role === 'direccion';
             const esPadre = role === 'padre';
             
-            console.log('🔴 Iniciando suscripciones en tiempo real para:', role);
+            console.log('🔴 Iniciando suscripciones en tiempo real para:', role, 'ID:', currentUser.id);
+            
+            // Limpiar canales anteriores
+            canalesActivos.forEach(canal => {
+                try { supabase.removeChannel(canal); } catch(e) {}
+            });
+            canalesActivos = [];
+            
+            // Función auxiliar para manejar notificaciones
+            const manejarNotificacion = async (titulo, descripcion, callback) => {
+                console.log(`🔔 NOTIFICACIÓN: ${titulo} - ${descripcion}`);
+                
+                // 1. Reproducir sonido (garantizado)
+                try {
+                    reproducirSonidoNotificacion();
+                } catch(e) { console.log('Error sonido:', e); }
+                
+                // 2. Mostrar toast visual
+                mostrarNotificacionVisual(titulo, descripcion);
+                
+                // 3. Animar campanita
+                animarCampanita();
+                
+                // 4. Actualizar contador
+                actualizarTituloPagina();
+                
+                // 5. Callback adicional
+                if (callback) await callback();
+            };
             
             if (esAdmin) {
-                // ADMIN: Recibe solicitudes de registro y mensajes de soporte
-                supabase
-                    .channel('admin-solicitudes')
+                // ADMIN: Recibe solicitudes de registro
+                const canalSolicitudes = supabase
+                    .channel('admin-solicitudes-' + Date.now())
                     .on('postgres_changes', 
                         { event: 'INSERT', schema: 'public', table: 'solicitudes_registro' },
-                        (payload) => {
+                        async (payload) => {
                             console.log('📬 Nueva solicitud de registro:', payload);
-                            reproducirSonidoNotificacion();
-                            mostrarNotificacionVisual('Nueva Solicitud', `${payload.new.nombre_completo} solicita registro`);
-                            actualizarContadorSolicitudes();
-                            actualizarTituloPagina();
-                            animarCampanita();
+                            await manejarNotificacion(
+                                'Nueva Solicitud', 
+                                `${payload.new.nombre_completo || 'Usuario'} solicita registro`,
+                                () => actualizarContadorSolicitudes()
+                            );
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('📡 Estado canal admin-solicitudes:', status);
+                    .subscribe((status, err) => {
+                        console.log('📡 Canal admin-solicitudes:', status, err || '');
+                        if (status === 'SUBSCRIBED') {
+                            console.log('✅ Canal solicitudes activo');
+                        }
                     });
+                canalesActivos.push(canalSolicitudes);
                 
-                supabase
-                    .channel('admin-soporte')
+                // ADMIN: Recibe mensajes de soporte
+                const canalSoporte = supabase
+                    .channel('admin-soporte-' + Date.now())
                     .on('postgres_changes',
                         { event: 'INSERT', schema: 'public', table: 'mensajes_soporte' },
-                        (payload) => {
+                        async (payload) => {
                             console.log('📨 Nuevo mensaje de soporte:', payload);
-                            reproducirSonidoNotificacion();
-                            mostrarNotificacionVisual('Nuevo Mensaje', `${payload.new.remitente_nombre || 'Usuario'} necesita ayuda`);
-                            cargarMensajesSoporte();
-                            cargarTablaSoporte();
-                            actualizarTituloPagina();
-                            animarMensajes();
+                            await manejarNotificacion(
+                                'Nuevo Mensaje', 
+                                `${payload.new.remitente_nombre || 'Usuario'} necesita ayuda`,
+                                async () => {
+                                    await cargarMensajesSoporte();
+                                    await cargarTablaSoporte();
+                                    animarMensajes();
+                                }
+                            );
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('📡 Estado canal admin-soporte:', status);
+                    .subscribe((status, err) => {
+                        console.log('📡 Canal admin-soporte:', status, err || '');
                     });
+                canalesActivos.push(canalSoporte);
             }
             
             if (esPadre) {
-                // PADRE: Recibe incidencias de sus hijos y respuestas a sus mensajes
-                supabase
-                    .channel('padre-incidencias')
+                // PADRE: Recibe TODAS las nuevas incidencias y filtra por hijo
+                const canalIncidencias = supabase
+                    .channel('padre-incidencias-' + Date.now())
                     .on('postgres_changes',
                         { event: 'INSERT', schema: 'public', table: 'incidencias' },
                         async (payload) => {
-                            // Verificar si la incidencia es de un hijo del padre
+                            console.log('📋 Nueva incidencia detectada:', payload.new);
                             const incidencia = payload.new;
                             const esDeHijo = await verificarIncidenciaDeHijo(incidencia.estudiante_id);
                             if (esDeHijo) {
-                                console.log('🚨 Nueva incidencia de tu hijo:', payload);
-                                reproducirSonidoNotificacion();
-                                mostrarNotificacionVisual('Nueva Incidencia', `Se registró una incidencia de tu hijo/a`);
-                                await cargarNotificacionesUsuario();
-                                actualizarTituloPagina();
-                                animarCampanita();
+                                console.log('🚨 ¡ES DE TU HIJO!');
+                                await manejarNotificacion(
+                                    'Nueva Incidencia', 
+                                    `Se registró una incidencia de tu hijo/a`,
+                                    () => cargarNotificacionesUsuario()
+                                );
                             }
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('📡 Estado canal padre-incidencias:', status);
+                    .subscribe((status, err) => {
+                        console.log('📡 Canal padre-incidencias:', status, err || '');
                     });
+                canalesActivos.push(canalIncidencias);
                 
-                // Respuestas a mensajes de soporte
-                supabase
-                    .channel('padre-respuestas')
+                // PADRE: Respuestas a mensajes de soporte
+                const canalRespuestas = supabase
+                    .channel('padre-respuestas-' + Date.now())
                     .on('postgres_changes',
-                        { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte', filter: `remitente_id=eq.${currentUser.id}` },
-                        (payload) => {
-                            if (payload.new.respuesta_admin) {
+                        { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte' },
+                        async (payload) => {
+                            // Verificar si es para este usuario
+                            if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
                                 console.log('💬 Respuesta del admin recibida:', payload);
-                                reproducirSonidoNotificacion();
-                                mostrarNotificacionVisual('Respuesta recibida', 'El administrador respondió tu mensaje');
-                                cargarNotificacionesUsuario();
-                                actualizarTituloPagina();
-                                animarCampanita();
+                                await manejarNotificacion(
+                                    'Respuesta recibida', 
+                                    'El administrador respondió tu mensaje',
+                                    () => cargarNotificacionesUsuario()
+                                );
                             }
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('📡 Estado canal padre-respuestas:', status);
+                    .subscribe((status, err) => {
+                        console.log('📡 Canal padre-respuestas:', status, err || '');
                     });
+                canalesActivos.push(canalRespuestas);
             }
             
             if (!esAdmin && !esPadre && role) {
-                // DOCENTE/AUXILIAR/OTROS: Reciben respuestas a sus mensajes de soporte
-                supabase
-                    .channel('usuario-respuestas')
+                // DOCENTE/AUXILIAR/OTROS: Respuestas a sus mensajes
+                const canalUsuario = supabase
+                    .channel('usuario-respuestas-' + Date.now())
                     .on('postgres_changes',
-                        { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte', filter: `remitente_id=eq.${currentUser.id}` },
-                        (payload) => {
-                            if (payload.new.respuesta_admin || payload.new.leido) {
-                                console.log('💬 Tu mensaje fue atendido:', payload);
-                                reproducirSonidoNotificacion();
-                                mostrarNotificacionVisual('Mensaje atendido', payload.new.respuesta_admin ? 'Recibiste una respuesta' : 'Tu mensaje fue leído');
-                                cargarNotificacionesUsuario();
-                                actualizarTituloPagina();
-                                animarCampanita();
+                        { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte' },
+                        async (payload) => {
+                            // Verificar si es para este usuario
+                            if (payload.new.remitente_id === currentUser.id) {
+                                if (payload.new.respuesta_admin || payload.new.leido) {
+                                    console.log('💬 Tu mensaje fue atendido:', payload);
+                                    await manejarNotificacion(
+                                        'Mensaje atendido', 
+                                        payload.new.respuesta_admin ? 'Recibiste una respuesta' : 'Tu mensaje fue leído',
+                                        () => cargarNotificacionesUsuario()
+                                    );
+                                }
                             }
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('📡 Estado canal usuario-respuestas:', status);
+                    .subscribe((status, err) => {
+                        console.log('📡 Canal usuario-respuestas:', status, err || '');
                     });
+                canalesActivos.push(canalUsuario);
             }
             
-            console.log('✅ Suscripciones en tiempo real activas para', role);
+            console.log('✅ Suscripciones en tiempo real activas:', canalesActivos.length, 'canales para', role);
         }
         
         // Verificar si una incidencia pertenece a un hijo del padre actual
