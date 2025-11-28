@@ -5,11 +5,15 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import webpush from 'https://esm.sh/web-push@3.6.7'
 
 // Configuración VAPID
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') || 'BPOLy4-xme3o_x7oKHjjqkl4SNbICUfWZm5MTWAaqZnrTFyi_T6q7BUZPzDOfxwlYfUISxJU8KbgihmN8373RMU';
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!;
 const VAPID_SUBJECT = 'mailto:admin@antoniotorresaraujo.edu.pe';
+
+// Configurar VAPID
+webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 interface PushPayload {
   type: 'mensaje_soporte' | 'incidencia' | 'solicitud' | 'respuesta';
@@ -19,56 +23,7 @@ interface PushPayload {
   data?: Record<string, unknown>;
 }
 
-// Función para convertir base64url a Uint8Array
-function base64UrlToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
-}
-
-// Función para crear el JWT para VAPID
-async function createVapidJwt(endpoint: string): Promise<string> {
-  const urlObj = new URL(endpoint);
-  const audience = `${urlObj.protocol}//${urlObj.host}`;
-  
-  const header = { alg: 'ES256', typ: 'JWT' };
-  const payload = {
-    aud: audience,
-    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60, // 12 horas
-    sub: VAPID_SUBJECT
-  };
-
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  
-  const signatureInput = `${headerB64}.${payloadB64}`;
-  
-  // Importar la clave privada VAPID
-  const privateKeyData = base64UrlToUint8Array(VAPID_PRIVATE_KEY);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    privateKeyData,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    cryptoKey,
-    encoder.encode(signatureInput)
-  );
-
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-  return `${headerB64}.${payloadB64}.${signatureB64}`;
-}
-
-// Enviar Web Push
+// Enviar Web Push usando la librería web-push
 async function sendWebPush(
   endpoint: string, 
   p256dh: string, 
@@ -76,47 +31,25 @@ async function sendWebPush(
   payload: object
 ): Promise<{ success: boolean; expired?: boolean }> {
   try {
-    const payloadString = JSON.stringify(payload);
-    const encoder = new TextEncoder();
-    const payloadBytes = encoder.encode(payloadString);
-
-    // Crear JWT para VAPID
-    const jwt = await createVapidJwt(endpoint);
-    
-    // Headers para Web Push
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/octet-stream',
-      'Content-Encoding': 'aes128gcm',
-      'TTL': '86400',
-      'Urgency': 'high',
-      'Authorization': `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`,
+    const subscription = {
+      endpoint: endpoint,
+      keys: {
+        p256dh: p256dh,
+        auth: auth
+      }
     };
 
-    // Por simplicidad, enviamos sin encriptar (algunos navegadores lo aceptan)
-    // Para producción completa se necesitaría implementar encriptación aes128gcm
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TTL': '86400',
-        'Urgency': 'high',
-      },
-      body: payloadString
-    });
-
-    if (response.ok || response.status === 201) {
-      return { success: true };
-    }
-
-    if (response.status === 410 || response.status === 404) {
-      console.log('Suscripción expirada:', endpoint);
+    await webpush.sendNotification(subscription, JSON.stringify(payload));
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error enviando push:', error.message || error);
+    
+    // Si el endpoint ya no es válido
+    if (error.statusCode === 410 || error.statusCode === 404) {
+      console.log('Suscripción expirada');
       return { success: false, expired: true };
     }
-
-    console.error('Error HTTP:', response.status, await response.text());
-    return { success: false };
-  } catch (error) {
-    console.error('Error enviando push:', error);
+    
     return { success: false };
   }
 }
