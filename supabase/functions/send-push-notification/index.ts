@@ -158,20 +158,38 @@ Deno.serve(async (req) => {
         sent++;
         
       } catch (pushError: any) {
-        console.error(`❌ Error enviando a ${sub.id}:`, pushError.message);
-        failed++;
+        // Capturar detalles completos del error
+        const errorMsg = pushError.message || pushError.toString() || 'Error desconocido';
+        const errorResponse = pushError.response;
         
-        // Si el error indica suscripción inválida, desactivar
-        if (pushError.message?.includes('410') || 
-            pushError.message?.includes('404') ||
-            pushError.message?.includes('gone') ||
-            pushError.isGone?.()) {
+        console.error(`❌ Error enviando a ${sub.id}: ${errorMsg}`);
+        
+        // Si hay una respuesta HTTP, loguearla
+        if (errorResponse) {
+          const status = errorResponse.status;
+          const statusText = errorResponse.statusText;
+          console.error(`   HTTP ${status} ${statusText}`);
+          
+          // Desactivar suscripción si está expirada
+          if (status === 410 || status === 404) {
+            await supabase
+              .from('push_subscriptions')
+              .update({ activa: false })
+              .eq('id', sub.id);
+            console.log(`🗑️ Desactivando suscripción expirada: ${sub.id}`);
+          }
+        }
+        
+        // También verificar método isGone() si existe
+        if (typeof pushError.isGone === 'function' && pushError.isGone()) {
           await supabase
             .from('push_subscriptions')
             .update({ activa: false })
             .eq('id', sub.id);
-          console.log(`🗑️ Desactivando suscripción inválida: ${sub.id}`);
+          console.log(`🗑️ Desactivando suscripción (isGone): ${sub.id}`);
         }
+        
+        failed++;
       }
     }
 
