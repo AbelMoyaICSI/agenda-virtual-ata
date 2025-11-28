@@ -11288,12 +11288,51 @@
             }
         }
         
+        // ===== DEBUG VISUAL PARA MÓVILES =====
+        let debugMode = true; // Activar para ver mensajes en pantalla
+        
+        function debugLog(mensaje, tipo = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`[${timestamp}] ${mensaje}`);
+            
+            if (debugMode) {
+                // Mostrar toast con el mensaje de debug
+                const colores = {
+                    'info': '#17a2b8',
+                    'success': '#28a745', 
+                    'error': '#dc3545',
+                    'warning': '#ffc107'
+                };
+                
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: ${20 + (document.querySelectorAll('.debug-toast').length * 50)}px;
+                    left: 10px;
+                    right: 10px;
+                    background: ${colores[tipo] || '#333'};
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    z-index: 99999;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                    animation: slideUp 0.3s ease;
+                `;
+                toast.className = 'debug-toast';
+                toast.innerHTML = `<strong>[${timestamp}]</strong> ${mensaje}`;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.remove(), 4000);
+            }
+        }
+        
         // ===== SUSCRIPCIÓN EN TIEMPO REAL (SUPABASE REALTIME) - MEJORADO =====
         let canalesActivos = [];
         
         function iniciarSuscripcionesRealtime() {
             if (!currentUser) {
-                console.log('❌ No hay usuario para suscripciones realtime');
+                debugLog('❌ No hay usuario para suscripciones', 'error');
                 return;
             }
             
@@ -11301,7 +11340,7 @@
             const esAdmin = role === 'admin' || role === 'direccion';
             const esPadre = role === 'padre';
             
-            console.log('🔴 Iniciando suscripciones en tiempo real para:', role, 'ID:', currentUser.id);
+            debugLog(`🔴 Iniciando Realtime para: ${role}`, 'info');
             
             // Limpiar canales anteriores
             canalesActivos.forEach(canal => {
@@ -11338,7 +11377,7 @@
                     .on('postgres_changes', 
                         { event: 'INSERT', schema: 'public', table: 'solicitudes_registro' },
                         async (payload) => {
-                            console.log('📬 Nueva solicitud de registro:', payload);
+                            debugLog('📬 NUEVA SOLICITUD RECIBIDA!', 'success');
                             await manejarNotificacion(
                                 'Nueva Solicitud', 
                                 `${payload.new.nombre_completo || 'Usuario'} solicita registro`,
@@ -11347,10 +11386,8 @@
                         }
                     )
                     .subscribe((status, err) => {
-                        console.log('📡 Canal admin-solicitudes:', status, err || '');
-                        if (status === 'SUBSCRIBED') {
-                            console.log('✅ Canal solicitudes activo');
-                        }
+                        debugLog(`Canal solicitudes: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
+                        if (err) debugLog(`Error: ${err}`, 'error');
                     });
                 canalesActivos.push(canalSolicitudes);
                 
@@ -11360,7 +11397,7 @@
                     .on('postgres_changes',
                         { event: 'INSERT', schema: 'public', table: 'mensajes_soporte' },
                         async (payload) => {
-                            console.log('📨 Nuevo mensaje de soporte:', payload);
+                            debugLog('📨 NUEVO MENSAJE RECIBIDO!', 'success');
                             await manejarNotificacion(
                                 'Nuevo Mensaje', 
                                 `${payload.new.remitente_nombre || 'Usuario'} necesita ayuda`,
@@ -11373,7 +11410,7 @@
                         }
                     )
                     .subscribe((status, err) => {
-                        console.log('📡 Canal admin-soporte:', status, err || '');
+                        debugLog(`Canal soporte: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
                     });
                 canalesActivos.push(canalSoporte);
             }
@@ -11385,21 +11422,23 @@
                     .on('postgres_changes',
                         { event: 'INSERT', schema: 'public', table: 'incidencias' },
                         async (payload) => {
-                            console.log('📋 Nueva incidencia detectada:', payload.new);
+                            debugLog('📋 Incidencia detectada, verificando...', 'info');
                             const incidencia = payload.new;
                             const esDeHijo = await verificarIncidenciaDeHijo(incidencia.estudiante_id);
                             if (esDeHijo) {
-                                console.log('🚨 ¡ES DE TU HIJO!');
+                                debugLog('🚨 ¡INCIDENCIA DE TU HIJO!', 'success');
                                 await manejarNotificacion(
                                     'Nueva Incidencia', 
                                     `Se registró una incidencia de tu hijo/a`,
                                     () => cargarNotificacionesUsuario()
                                 );
+                            } else {
+                                debugLog('Incidencia no es de tu hijo', 'warning');
                             }
                         }
                     )
                     .subscribe((status, err) => {
-                        console.log('📡 Canal padre-incidencias:', status, err || '');
+                        debugLog(`Canal incidencias: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
                     });
                 canalesActivos.push(canalIncidencias);
                 
@@ -11411,7 +11450,7 @@
                         async (payload) => {
                             // Verificar si es para este usuario
                             if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
-                                console.log('💬 Respuesta del admin recibida:', payload);
+                                debugLog('💬 RESPUESTA DEL ADMIN!', 'success');
                                 await manejarNotificacion(
                                     'Respuesta recibida', 
                                     'El administrador respondió tu mensaje',
@@ -11421,7 +11460,7 @@
                         }
                     )
                     .subscribe((status, err) => {
-                        console.log('📡 Canal padre-respuestas:', status, err || '');
+                        debugLog(`Canal respuestas-padre: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
                     });
                 canalesActivos.push(canalRespuestas);
             }
@@ -11436,7 +11475,7 @@
                             // Verificar si es para este usuario
                             if (payload.new.remitente_id === currentUser.id) {
                                 if (payload.new.respuesta_admin || payload.new.leido) {
-                                    console.log('💬 Tu mensaje fue atendido:', payload);
+                                    debugLog('💬 TU MENSAJE FUE ATENDIDO!', 'success');
                                     await manejarNotificacion(
                                         'Mensaje atendido', 
                                         payload.new.respuesta_admin ? 'Recibiste una respuesta' : 'Tu mensaje fue leído',
@@ -11447,12 +11486,12 @@
                         }
                     )
                     .subscribe((status, err) => {
-                        console.log('📡 Canal usuario-respuestas:', status, err || '');
+                        debugLog(`Canal usuario: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
                     });
                 canalesActivos.push(canalUsuario);
             }
             
-            console.log('✅ Suscripciones en tiempo real activas:', canalesActivos.length, 'canales para', role);
+            debugLog(`✅ ${canalesActivos.length} canales activos para ${role}`, 'success');
         }
         
         // Verificar si una incidencia pertenece a un hijo del padre actual
