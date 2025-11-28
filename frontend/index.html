@@ -11376,20 +11376,27 @@
                 // 2. Mostrar toast visual
                 mostrarNotificacionVisual(titulo, descripcion);
                 
-                // 3. Mostrar notificación del navegador (si tiene permiso)
-                if (Notification.permission === 'granted') {
+                // 3. Mostrar notificación del navegador (usando Service Worker para móviles)
+                if (Notification.permission === 'granted' && swRegistration) {
                     try {
-                        new Notification(titulo, {
+                        await swRegistration.showNotification(titulo, {
                             body: descripcion,
                             icon: '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
                             badge: '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
                             vibrate: [200, 100, 200],
                             tag: 'ata-' + Date.now(),
-                            requireInteraction: true
+                            requireInteraction: true,
+                            data: { url: window.location.href }
                         });
+                        debugLog('✅ Notificación del sistema mostrada', 'success');
                     } catch(e) {
-                        debugLog('Error notificación navegador: ' + e, 'warning');
+                        debugLog('Error notificación SW: ' + e, 'warning');
                     }
+                } else if (Notification.permission === 'granted') {
+                    // Fallback para escritorio sin SW
+                    try {
+                        new Notification(titulo, { body: descripcion });
+                    } catch(e) { }
                 }
                 
                 // 4. Animar campanita
