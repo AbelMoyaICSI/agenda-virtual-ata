@@ -18,14 +18,37 @@ DECLARE
     cuerpo TEXT;
     tipo TEXT;
     nombre_estudiante TEXT;
+    nombre_demerito TEXT;
+    nombre_merito TEXT;
+    tipo_incidencia TEXT;
 BEGIN
     -- Determinar qué tipo de evento es
     IF TG_TABLE_NAME = 'incidencias' THEN
         -- Nueva incidencia (INSERT)
         IF TG_OP = 'INSERT' THEN
             tipo := 'nueva_incidencia';
-            titulo := '📋 Nueva Incidencia';
-            cuerpo := 'Se ha registrado una nueva incidencia para su hijo(a)';
+            
+            -- Obtener nombre del estudiante
+            SELECT estudiantes.nombre_completo INTO nombre_estudiante
+            FROM estudiantes
+            WHERE estudiantes.id = NEW.estudiante_id;
+            
+            -- Determinar si es mérito o demérito y obtener el nombre
+            IF NEW.tipo = 'merito' THEN
+                tipo_incidencia := '🏆 Mérito';
+                SELECT catalogo_meritos.nombre INTO nombre_merito
+                FROM catalogo_meritos
+                WHERE catalogo_meritos.id = NEW.catalogo_merito_id;
+                titulo := '🏆 Nuevo Mérito Registrado';
+                cuerpo := COALESCE(nombre_estudiante, 'Su hijo(a)') || ' - ' || COALESCE(nombre_merito, 'Reconocimiento');
+            ELSE
+                tipo_incidencia := '⚠️ Demérito';
+                SELECT catalogo_demeritos.nombre INTO nombre_demerito
+                FROM catalogo_demeritos
+                WHERE catalogo_demeritos.id = NEW.catalogo_demerito_id;
+                titulo := '⚠️ Nueva Incidencia Registrada';
+                cuerpo := COALESCE(nombre_estudiante, 'Su hijo(a)') || ' - ' || COALESCE(nombre_demerito, NEW.descripcion, 'Falta registrada');
+            END IF;
             
             -- Obtener el apoderado del estudiante
             SELECT estudiantes.apoderado_id INTO user_id_destino

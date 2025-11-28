@@ -10957,69 +10957,89 @@
             
             let sonidoReproducido = false;
             
-            // MÉTODO 1: Usar Audio HTML5 (más compatible)
+            // MÉTODO 1: Crear Audio HTML5 NUEVO cada vez (más agresivo)
+            try {
+                const audioNuevo = new Audio(DING_SOUND_BASE64);
+                audioNuevo.volume = 1.0; // Volumen máximo
+                audioNuevo.play().then(() => {
+                    console.log('🔔✅ DING reproducido con Audio HTML5 NUEVO!');
+                    sonidoReproducido = true;
+                }).catch(e => {
+                    console.log('🔔⚠️ Audio nuevo bloqueado:', e.message);
+                });
+            } catch(e) {
+                console.log('🔔 Audio nuevo falló:', e);
+            }
+            
+            // MÉTODO 2: Audio HTML5 cacheado como respaldo
             try {
                 const audio = crearDingAudio();
                 audio.currentTime = 0;
+                audio.volume = 1.0;
                 const playPromise = audio.play();
                 if (playPromise) {
                     playPromise.then(() => {
-                        console.log('🔔✅ DING reproducido con Audio HTML5!');
+                        console.log('🔔✅ DING reproducido con Audio HTML5 cacheado!');
                         sonidoReproducido = true;
                     }).catch(e => {
-                        console.log('🔔⚠️ Audio HTML5 bloqueado:', e.message);
+                        console.log('🔔⚠️ Audio HTML5 cacheado bloqueado:', e.message);
                     });
                 }
             } catch(e) {
-                console.log('🔔 Audio HTML5 falló:', e);
+                console.log('🔔 Audio HTML5 cacheado falló:', e);
             }
             
-            // MÉTODO 2: AudioContext (más control pero requiere interacción previa)
+            // MÉTODO 3: AudioContext con osciladores (sonido sintético)
             try {
                 if (!audioContext) {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
                 
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
+                // Intentar resumir siempre
+                const intentarReproducir = () => {
+                    if (audioContext.state === 'running') {
+                        const ctx = audioContext;
+                        const now = ctx.currentTime;
+                        
+                        // DING tipo campana - acordes mayores
+                        const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6
+                        
+                        frequencies.forEach((freq, i) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            
+                            osc.type = 'sine';
+                            osc.frequency.value = freq;
+                            
+                            const startTime = now + (i * 0.02);
+                            gain.gain.setValueAtTime(0, startTime);
+                            gain.gain.linearRampToValueAtTime(0.8, startTime + 0.01);
+                            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 1.0);
+                            
+                            osc.start(startTime);
+                            osc.stop(startTime + 1.2);
+                        });
+                        
+                        console.log('🔔✅ DING AudioContext reproducido!');
+                        sonidoReproducido = true;
+                    }
+                };
                 
-                if (audioContext.state === 'running') {
-                    const ctx = audioContext;
-                    const now = ctx.currentTime;
-                    
-                    // Crear osciladores para un DING tipo campana más fuerte
-                    const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6
-                    
-                    frequencies.forEach((freq, i) => {
-                        const osc = ctx.createOscillator();
-                        const gain = ctx.createGain();
-                        
-                        osc.connect(gain);
-                        gain.connect(ctx.destination);
-                        
-                        osc.type = 'sine';
-                        osc.frequency.value = freq;
-                        
-                        const startTime = now + (i * 0.02);
-                        gain.gain.setValueAtTime(0, startTime);
-                        gain.gain.linearRampToValueAtTime(0.6, startTime + 0.01); // Más volumen
-                        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.8);
-                        
-                        osc.start(startTime);
-                        osc.stop(startTime + 1);
-                    });
-                    
-                    console.log('🔔✅ DING AudioContext reproducido!');
-                    sonidoReproducido = true;
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(intentarReproducir);
+                } else {
+                    intentarReproducir();
                 }
             } catch(e) {
                 console.log('🔔 AudioContext falló:', e);
             }
             
-            // MÉTODO 3: Vibración en móvil
+            // MÉTODO 4: Vibración en móvil (siempre intentar)
             if ('vibrate' in navigator) {
-                navigator.vibrate([150, 50, 150, 50, 150]);
+                navigator.vibrate([200, 100, 200, 100, 300]);
                 console.log('📳 Vibración activada');
             }
             
