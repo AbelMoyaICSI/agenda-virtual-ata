@@ -2270,7 +2270,8 @@
             align-items: center;
             justify-content: center;
             z-index: 99999;
-            padding: 20px;
+            padding: 15px;
+            box-sizing: border-box;
             animation: fadeIn 0.2s ease;
         }
         
@@ -2282,12 +2283,23 @@
         .modal-generic-content {
             background: white;
             border-radius: 16px;
-            width: calc(100% - 30px);
-            max-width: 420px;
+            width: 100%;
+            max-width: 380px;
             box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
             animation: modalBounce 0.3s ease;
             overflow: hidden;
-            margin: 15px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 480px) {
+            .modal-generic {
+                padding: 10px;
+            }
+            .modal-generic-content {
+                max-width: 100%;
+                border-radius: 12px;
+            }
         }
         
         @keyframes modalBounce {
@@ -11610,33 +11622,37 @@
                             
                             // Verificar si es una incidencia registrada por este docente
                             if (inc.docente_id === currentUser.id || inc.registrado_por === currentUser.id) {
-                                // Padre leyó la incidencia
-                                if (inc.leido_padre && !oldInc.leido_padre) {
-                                    // Obtener nombre del padre
-                                    const nombrePadre = inc.padre_nombre || 'El apoderado';
+                                // Padre confirmó/revisó la incidencia
+                                if (inc.revisado_por_padre && !oldInc.revisado_por_padre) {
+                                    debugLog('✅ PADRE CONFIRMÓ INCIDENCIA!', 'success');
                                     
-                                    if (inc.respuesta_padre && inc.respuesta_padre !== oldInc.respuesta_padre) {
-                                        // Padre leyó Y respondió
-                                        await manejarNotificacion(
-                                            `👨‍👩‍👧 ${nombrePadre} vio el comunicado`,
-                                            `"${(inc.respuesta_padre || '').substring(0, 100)}${inc.respuesta_padre?.length > 100 ? '...' : ''}"`,
-                                            () => cargarNotificacionesUsuario()
-                                        );
-                                    } else {
-                                        // Solo leyó (sin sonido push, solo visual)
-                                        mostrarNotificacionVisual(
-                                            '👁️ Comunicado leído',
-                                            `${nombrePadre} ha leído la incidencia`
-                                        );
-                                        animarCampanita();
+                                    // Obtener nombre del estudiante para el mensaje
+                                    let nombreEstudiante = 'un estudiante';
+                                    try {
+                                        const { data: estudiante } = await supabase
+                                            .from('estudiantes')
+                                            .select('nombre_completo')
+                                            .eq('id', inc.estudiante_id)
+                                            .single();
+                                        if (estudiante) nombreEstudiante = estudiante.nombre_completo;
+                                    } catch(e) {}
+                                    
+                                    // Mensaje con o sin comentario del padre
+                                    let mensaje = `Incidencia de ${nombreEstudiante} ha sido revisada`;
+                                    if (inc.comentario_padre) {
+                                        mensaje += `\n💬 "${inc.comentario_padre.substring(0, 80)}${inc.comentario_padre.length > 80 ? '...' : ''}"`;
                                     }
-                                } else if (inc.respuesta_padre && inc.respuesta_padre !== oldInc.respuesta_padre) {
-                                    // Solo respondió (ya había leído antes)
-                                    const nombrePadre = inc.padre_nombre || 'El apoderado';
+                                    
                                     await manejarNotificacion(
-                                        `💬 Respuesta de ${nombrePadre}`,
-                                        `"${(inc.respuesta_padre || '').substring(0, 100)}${inc.respuesta_padre?.length > 100 ? '...' : ''}"`,
-                                        () => cargarNotificacionesUsuario()
+                                        '✅ Padre confirmó lectura',
+                                        mensaje,
+                                        () => {
+                                            cargarNotificacionesUsuario();
+                                            // Actualizar historial si está visible
+                                            if (typeof renderizarHistorial === 'function') {
+                                                renderizarHistorial();
+                                            }
+                                        }
                                     );
                                 }
                             }
