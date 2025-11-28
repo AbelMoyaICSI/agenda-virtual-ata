@@ -11305,7 +11305,7 @@
         }
         
         // ===== DEBUG VISUAL PARA MÓVILES =====
-        let debugMode = true; // Activar para ver mensajes en pantalla
+        let debugMode = false; // Desactivado - cambiar a true para depurar
         
         function debugLog(mensaje, tipo = 'info') {
             const timestamp = new Date().toLocaleTimeString();
@@ -11417,9 +11417,10 @@
                         { event: 'INSERT', schema: 'public', table: 'solicitudes_registro' },
                         async (payload) => {
                             debugLog('📬 NUEVA SOLICITUD RECIBIDA!', 'success');
+                            const solicitud = payload.new;
                             await manejarNotificacion(
-                                'Nueva Solicitud', 
-                                `${payload.new.nombre_completo || 'Usuario'} solicita registro`,
+                                '📋 Nueva Solicitud de Registro', 
+                                `${solicitud.nombre_completo || 'Usuario'} (${solicitud.rol || 'Sin rol'}) - DNI: ${solicitud.dni || 'N/A'}`,
                                 () => actualizarContadorSolicitudes()
                             );
                         }
@@ -11437,9 +11438,10 @@
                         { event: 'INSERT', schema: 'public', table: 'mensajes_soporte' },
                         async (payload) => {
                             debugLog('📨 NUEVO MENSAJE RECIBIDO!', 'success');
+                            const msg = payload.new;
                             await manejarNotificacion(
-                                'Nuevo Mensaje', 
-                                `${payload.new.remitente_nombre || 'Usuario'} necesita ayuda`,
+                                '💬 Nuevo Mensaje de Soporte', 
+                                `De: ${msg.remitente_nombre || 'Usuario'}\n"${(msg.mensaje || '').substring(0, 80)}${msg.mensaje?.length > 80 ? '...' : ''}"`,
                                 async () => {
                                     await cargarMensajesSoporte();
                                     await cargarTablaSoporte();
@@ -11466,9 +11468,10 @@
                             const esDeHijo = await verificarIncidenciaDeHijo(incidencia.estudiante_id);
                             if (esDeHijo) {
                                 debugLog('🚨 ¡INCIDENCIA DE TU HIJO!', 'success');
+                                const inc = incidencia;
                                 await manejarNotificacion(
-                                    'Nueva Incidencia', 
-                                    `Se registró una incidencia de tu hijo/a`,
+                                    '🚨 Incidencia de tu hijo/a', 
+                                    `Tipo: ${inc.tipo_incidencia || 'No especificado'}\nMotivo: ${(inc.descripcion || inc.motivo || 'Sin descripción').substring(0, 100)}`,
                                     () => cargarNotificacionesUsuario()
                                 );
                             } else {
@@ -11490,9 +11493,10 @@
                             // Verificar si es para este usuario
                             if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
                                 debugLog('💬 RESPUESTA DEL ADMIN!', 'success');
+                                const resp = payload.new;
                                 await manejarNotificacion(
-                                    'Respuesta recibida', 
-                                    'El administrador respondió tu mensaje',
+                                    '✅ Respuesta del Administrador', 
+                                    `"${(resp.respuesta_admin || '').substring(0, 100)}${resp.respuesta_admin?.length > 100 ? '...' : ''}"`,
                                     () => cargarNotificacionesUsuario()
                                 );
                             }
@@ -11515,9 +11519,14 @@
                             if (payload.new.remitente_id === currentUser.id) {
                                 if (payload.new.respuesta_admin || payload.new.leido) {
                                     debugLog('💬 TU MENSAJE FUE ATENDIDO!', 'success');
+                                    const resp = payload.new;
+                                    const titulo = resp.respuesta_admin ? '✅ Respuesta Recibida' : '👁️ Mensaje Leído';
+                                    const cuerpo = resp.respuesta_admin 
+                                        ? `"${(resp.respuesta_admin || '').substring(0, 100)}${resp.respuesta_admin?.length > 100 ? '...' : ''}"`
+                                        : 'El administrador ha visto tu mensaje';
                                     await manejarNotificacion(
-                                        'Mensaje atendido', 
-                                        payload.new.respuesta_admin ? 'Recibiste una respuesta' : 'Tu mensaje fue leído',
+                                        titulo, 
+                                        cuerpo,
                                         () => cargarNotificacionesUsuario()
                                     );
                                 }
