@@ -4610,19 +4610,31 @@
             contenido.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Cargando detalles...</p>';
             
             try {
-                const { data: inc, error } = await supabase
+                // Primero intentar con todas las relaciones
+                let { data: inc, error } = await supabase
                     .from('incidencias')
                     .select(`
                         *,
                         estudiante:estudiantes(id, nombre_completo, dni, grado, seccion, nivel),
                         catalogo_demerito:catalogo_demeritos(codigo, nombre, descripcion, severidad, categoria),
-                        catalogo_merito:catalogo_meritos(codigo, nombre, descripcion, area),
-                        registrador:users!registrado_por(nombre_completo, role)
+                        catalogo_merito:catalogo_meritos(codigo, nombre, descripcion, area)
                     `)
                     .eq('id', incidenciaId)
-                    .single();
+                    .maybeSingle();
                 
-                if (error) throw error;
+                // Si falla o no hay datos, intentar sin relaciones
+                if (error || !inc) {
+                    console.log('⚠️ Error con relaciones, intentando sin ellas:', error);
+                    const result = await supabase
+                        .from('incidencias')
+                        .select('*')
+                        .eq('id', incidenciaId)
+                        .maybeSingle();
+                    
+                    if (result.error) throw result.error;
+                    if (!result.data) throw new Error('Incidencia no encontrada');
+                    inc = result.data;
+                }
                 
                 // Determinar tipo y color
                 const esMerito = inc.tipo === 'merito';

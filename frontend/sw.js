@@ -56,15 +56,22 @@ self.addEventListener('fetch', (event) => {
   // Solo cachear requests GET
   if (event.request.method !== 'GET') return;
   
-  // Ignorar requests de Supabase y APIs externas
-  if (event.request.url.includes('supabase.co') || 
-      event.request.url.includes('googleapis.com')) {
+  // Ignorar requests de Supabase, APIs externas y extensiones de Chrome
+  const url = event.request.url;
+  if (url.includes('supabase.co') || 
+      url.includes('googleapis.com') ||
+      url.startsWith('chrome-extension://') ||
+      url.startsWith('moz-extension://')) {
     return;
   }
   
   event.respondWith(
     fetch(event.request)
       .then((response) => {
+        // Solo cachear respuestas válidas
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
         // Clonar la respuesta para guardar en cache
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
