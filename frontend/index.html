@@ -5385,6 +5385,9 @@
                 // Suscripciones en tiempo real para TODOS
                 iniciarSuscripcionesRealtime();
                 
+                // Inicializar Web Push Notifications
+                inicializarWebPush();
+                
                 // Actualizar título con conteo inicial
                 setTimeout(() => {
                     actualizarTituloPagina();
@@ -10887,6 +10890,232 @@
             reproducirSonidoNotificacion();
             return 'Sonido enviado - revisa si escuchaste el DING';
         };
+        
+        // =====================================================
+        // ===== WEB PUSH NOTIFICATIONS - PWA =====
+        // =====================================================
+        
+        // Clave pública VAPID (generada con web-push)
+        const VAPID_PUBLIC_KEY = 'BDbXSlwzNkUViJHsI9Cs4vlEMaVQun9lV42mB3y2w30FjqECZsew43fQra4m1RLzpWYqhWflRoEjYHi-XzcSSdY';
+        
+        let swRegistration = null;
+        let pushSubscription = null;
+        
+        // Convertir clave VAPID de base64 a Uint8Array
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+            
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+        
+        // Registrar Service Worker
+        async function registrarServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                console.log('❌ Service Worker no soportado');
+                return null;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js', {
+                    scope: '/'
+                });
+                
+                console.log('✅ Service Worker registrado:', registration.scope);
+                swRegistration = registration;
+                
+                // Esperar a que el SW esté activo
+                if (registration.installing) {
+                    console.log('⏳ Service Worker instalándose...');
+                } else if (registration.waiting) {
+                    console.log('⏳ Service Worker esperando...');
+                } else if (registration.active) {
+                    console.log('✅ Service Worker activo');
+                }
+                
+                return registration;
+            } catch (error) {
+                console.error('❌ Error registrando Service Worker:', error);
+                return null;
+            }
+        }
+        
+        // Suscribir a notificaciones push
+        async function suscribirAPush() {
+            if (!swRegistration) {
+                console.log('❌ No hay Service Worker registrado');
+                return null;
+            }
+            
+            try {
+                // Verificar permiso de notificaciones
+                const permission = await Notification.requestPermission();
+                
+                if (permission !== 'granted') {
+                    console.log('❌ Permiso de notificaciones denegado');
+                    return null;
+                }
+                
+                console.log('✅ Permiso de notificaciones concedido');
+                
+                // Verificar si ya hay suscripción
+                let subscription = await swRegistration.pushManager.getSubscription();
+                
+                if (subscription) {
+                    console.log('📱 Ya existe suscripción push');
+                    pushSubscription = subscription;
+                    await guardarSuscripcionEnBD(subscription);
+                    return subscription;
+                }
+                
+                // Crear nueva suscripción
+                subscription = await swRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+                
+                console.log('🔔 Nueva suscripción push creada');
+                pushSubscription = subscription;
+                
+                // Guardar en BD
+                await guardarSuscripcionEnBD(subscription);
+                
+                return subscription;
+                
+            } catch (error) {
+                console.error('❌ Error suscribiendo a push:', error);
+                return null;
+            }
+        }
+        
+        // Guardar suscripción en Supabase
+        async function guardarSuscripcionEnBD(subscription) {
+            if (!currentUser || !subscription) return;
+            
+            try {
+                const subscriptionJson = subscription.toJSON();
+                
+                const { data, error } = await supabase
+                    .from('push_subscriptions')
+                    .upsert({
+                        user_id: currentUser.id,
+                        endpoint: subscriptionJson.endpoint,
+                        p256dh: subscriptionJson.keys.p256dh,
+                        auth: subscriptionJson.keys.auth,
+                        user_agent: navigator.userAgent,
+                        activa: true,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id,endpoint'
+                    });
+                
+                if (error) {
+                    console.error('❌ Error guardando suscripción:', error);
+                } else {
+                    console.log('✅ Suscripción guardada en BD');
+                }
+            } catch (error) {
+                console.error('❌ Error guardando suscripción:', error);
+            }
+        }
+        
+        // Cancelar suscripción
+        async function cancelarSuscripcionPush() {
+            if (!pushSubscription) return;
+            
+            try {
+                await pushSubscription.unsubscribe();
+                
+                // Desactivar en BD
+                if (currentUser) {
+                    await supabase
+                        .from('push_subscriptions')
+                        .update({ activa: false })
+                        .eq('user_id', currentUser.id)
+                        .eq('endpoint', pushSubscription.endpoint);
+                }
+                
+                pushSubscription = null;
+                console.log('🔕 Suscripción push cancelada');
+            } catch (error) {
+                console.error('❌ Error cancelando suscripción:', error);
+            }
+        }
+        
+        // Verificar estado de suscripción
+        async function verificarEstadoPush() {
+            if (!swRegistration) return { soportado: false };
+            
+            try {
+                const subscription = await swRegistration.pushManager.getSubscription();
+                return {
+                    soportado: true,
+                    permiso: Notification.permission,
+                    suscrito: !!subscription
+                };
+            } catch (error) {
+                return { soportado: false, error: error.message };
+            }
+        }
+        
+        // Inicializar Push al cargar (después del login)
+        async function inicializarWebPush() {
+            console.log('🚀 Inicializando Web Push...');
+            
+            // 1. Registrar Service Worker
+            await registrarServiceWorker();
+            
+            // 2. Si hay usuario logueado, intentar suscribir
+            if (currentUser) {
+                // Solo preguntar si no ha denegado antes
+                if (Notification.permission === 'default') {
+                    // Mostrar mensaje explicativo antes de pedir permiso
+                    setTimeout(() => {
+                        suscribirAPush();
+                    }, 3000); // Esperar 3 segundos después del login
+                } else if (Notification.permission === 'granted') {
+                    await suscribirAPush();
+                }
+            }
+        }
+        
+        // Función de prueba para enviar push local (solo para testing)
+        window.probarPush = async function() {
+            if (!swRegistration) {
+                return 'Error: Service Worker no registrado. Recarga la página.';
+            }
+            
+            if (Notification.permission !== 'granted') {
+                return 'Error: Permiso de notificaciones no concedido.';
+            }
+            
+            // Enviar notificación de prueba localmente
+            swRegistration.showNotification('🧪 Prueba de Notificación', {
+                body: 'Esta es una prueba de Web Push - ¡Funciona!',
+                icon: '/logo-ata-192.png',
+                badge: '/logo-ata-192.png',
+                tag: 'test-notification',
+                requireInteraction: true,
+                vibrate: [200, 100, 200]
+            });
+            
+            return '✅ Notificación de prueba enviada';
+        };
+        
+        // Registrar SW al cargar la página
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                registrarServiceWorker();
+            });
+        }
         
         // Mostrar notificación visual en pantalla (toast)
         function mostrarNotificacionVisual(titulo, mensaje) {

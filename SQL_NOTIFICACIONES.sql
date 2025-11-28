@@ -105,3 +105,55 @@ FOR UPDATE USING (
 -- =====================================================
 -- ¡Listo! Ejecuta este SQL en tu Supabase Dashboard
 -- =====================================================
+
+-- =====================================================
+-- 7. TABLA PARA WEB PUSH SUBSCRIPTIONS
+-- Guarda las suscripciones de notificaciones push de cada usuario
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    activa BOOLEAN DEFAULT TRUE,
+    UNIQUE(user_id, endpoint)
+);
+
+-- Índices para búsqueda rápida
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_activa ON push_subscriptions(activa);
+
+-- Habilitar RLS
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Políticas RLS para push_subscriptions
+DROP POLICY IF EXISTS "usuarios_gestionan_sus_suscripciones" ON push_subscriptions;
+CREATE POLICY "usuarios_gestionan_sus_suscripciones" ON push_subscriptions
+FOR ALL USING (user_id = auth.uid());
+
+-- Admin puede ver todas las suscripciones
+DROP POLICY IF EXISTS "admin_ve_todas_suscripciones" ON push_subscriptions;
+CREATE POLICY "admin_ve_todas_suscripciones" ON push_subscriptions
+FOR SELECT USING (
+    EXISTS (
+        SELECT 1 FROM users 
+        WHERE users.id = auth.uid() 
+        AND users.role IN ('admin', 'direccion')
+    )
+);
+
+-- Trigger para updated_at
+DROP TRIGGER IF EXISTS update_push_subscriptions_updated_at ON push_subscriptions;
+CREATE TRIGGER update_push_subscriptions_updated_at
+    BEFORE UPDATE ON push_subscriptions
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- FIN DEL SQL - Ejecutar todo en Supabase SQL Editor
+-- =====================================================
