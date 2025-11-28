@@ -11492,13 +11492,18 @@
                         async (payload) => {
                             // Verificar si es para este usuario
                             if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
-                                debugLog('💬 RESPUESTA DEL ADMIN!', 'success');
-                                const resp = payload.new;
-                                await manejarNotificacion(
-                                    '✅ Respuesta del Administrador', 
-                                    `"${(resp.respuesta_admin || '').substring(0, 100)}${resp.respuesta_admin?.length > 100 ? '...' : ''}"`,
-                                    () => cargarNotificacionesUsuario()
-                                );
+                                // Solo notificar si hay respuesta nueva
+                                const oldResp = payload.old?.respuesta_admin || '';
+                                const newResp = payload.new.respuesta_admin || '';
+                                
+                                if (newResp && newResp !== oldResp) {
+                                    debugLog('💬 RESPUESTA DEL ADMIN!', 'success');
+                                    await manejarNotificacion(
+                                        '📩 Te ha respondido el Administrador', 
+                                        `"${newResp.substring(0, 120)}${newResp.length > 120 ? '...' : ''}"`,
+                                        () => cargarNotificacionesUsuario()
+                                    );
+                                }
                             }
                         }
                     )
@@ -11509,24 +11514,24 @@
             }
             
             if (!esAdmin && !esPadre && role) {
-                // DOCENTE/AUXILIAR/OTROS: Respuestas a sus mensajes
+                // DOCENTE/AUXILIAR/OTROS: Respuestas a sus mensajes de soporte
                 const canalUsuario = supabase
                     .channel('usuario-respuestas-' + Date.now())
                     .on('postgres_changes',
                         { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte' },
                         async (payload) => {
-                            // Verificar si es para este usuario
-                            if (payload.new.remitente_id === currentUser.id) {
-                                if (payload.new.respuesta_admin || payload.new.leido) {
-                                    debugLog('💬 TU MENSAJE FUE ATENDIDO!', 'success');
-                                    const resp = payload.new;
-                                    const titulo = resp.respuesta_admin ? '✅ Respuesta Recibida' : '👁️ Mensaje Leído';
-                                    const cuerpo = resp.respuesta_admin 
-                                        ? `"${(resp.respuesta_admin || '').substring(0, 100)}${resp.respuesta_admin?.length > 100 ? '...' : ''}"`
-                                        : 'El administrador ha visto tu mensaje';
+                            // Verificar si es para este usuario Y si hay respuesta (no solo leído)
+                            if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
+                                // Solo notificar si hay respuesta real, no cuando solo leen
+                                const oldResp = payload.old?.respuesta_admin || '';
+                                const newResp = payload.new.respuesta_admin || '';
+                                
+                                // Solo notificar si la respuesta es nueva
+                                if (newResp && newResp !== oldResp) {
+                                    debugLog('💬 RESPUESTA DEL ADMIN!', 'success');
                                     await manejarNotificacion(
-                                        titulo, 
-                                        cuerpo,
+                                        '📩 Te ha respondido el Administrador', 
+                                        `"${newResp.substring(0, 120)}${newResp.length > 120 ? '...' : ''}"`,
                                         () => cargarNotificacionesUsuario()
                                     );
                                 }
@@ -11537,6 +11542,54 @@
                         debugLog(`Canal usuario: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
                     });
                 canalesActivos.push(canalUsuario);
+                
+                // DOCENTE: Recibir confirmaciones de padres sobre incidencias
+                const canalConfirmaciones = supabase
+                    .channel('docente-confirmaciones-' + Date.now())
+                    .on('postgres_changes',
+                        { event: 'UPDATE', schema: 'public', table: 'incidencias' },
+                        async (payload) => {
+                            const inc = payload.new;
+                            const oldInc = payload.old || {};
+                            
+                            // Verificar si es una incidencia registrada por este docente
+                            if (inc.docente_id === currentUser.id || inc.registrado_por === currentUser.id) {
+                                // Padre leyó la incidencia
+                                if (inc.leido_padre && !oldInc.leido_padre) {
+                                    // Obtener nombre del padre
+                                    const nombrePadre = inc.padre_nombre || 'El apoderado';
+                                    
+                                    if (inc.respuesta_padre && inc.respuesta_padre !== oldInc.respuesta_padre) {
+                                        // Padre leyó Y respondió
+                                        await manejarNotificacion(
+                                            `👨‍👩‍👧 ${nombrePadre} vio el comunicado`,
+                                            `"${(inc.respuesta_padre || '').substring(0, 100)}${inc.respuesta_padre?.length > 100 ? '...' : ''}"`,
+                                            () => cargarNotificacionesUsuario()
+                                        );
+                                    } else {
+                                        // Solo leyó (sin sonido push, solo visual)
+                                        mostrarNotificacionVisual(
+                                            '👁️ Comunicado leído',
+                                            `${nombrePadre} ha leído la incidencia`
+                                        );
+                                        animarCampanita();
+                                    }
+                                } else if (inc.respuesta_padre && inc.respuesta_padre !== oldInc.respuesta_padre) {
+                                    // Solo respondió (ya había leído antes)
+                                    const nombrePadre = inc.padre_nombre || 'El apoderado';
+                                    await manejarNotificacion(
+                                        `💬 Respuesta de ${nombrePadre}`,
+                                        `"${(inc.respuesta_padre || '').substring(0, 100)}${inc.respuesta_padre?.length > 100 ? '...' : ''}"`,
+                                        () => cargarNotificacionesUsuario()
+                                    );
+                                }
+                            }
+                        }
+                    )
+                    .subscribe((status, err) => {
+                        debugLog(`Canal confirmaciones: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
+                    });
+                canalesActivos.push(canalConfirmaciones);
             }
             
             debugLog(`✅ ${canalesActivos.length} canales activos para ${role}`, 'success');

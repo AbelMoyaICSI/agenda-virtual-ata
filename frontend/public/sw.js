@@ -86,8 +86,8 @@ self.addEventListener('push', (event) => {
   let data = {
     title: '📚 Agenda Virtual ATA',
     body: 'Tienes una nueva notificación',
-    icon: '/logo-ata-192.png',
-    badge: '/logo-ata-192.png',
+    icon: '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+    badge: '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
     tag: 'agenda-ata-notification',
     requireInteraction: true,
     vibrate: [200, 100, 200],
@@ -111,8 +111,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon || '/logo-ata-192.png',
-      badge: data.badge || '/logo-ata-192.png',
+      icon: data.icon || '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+      badge: data.badge || '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
       tag: data.tag || 'agenda-notification',
       requireInteraction: data.requireInteraction !== false,
       vibrate: data.vibrate || [200, 100, 200],
