@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       .from('push_subscriptions')
       .select('*')
       .eq('user_id', payload.user_id)
-      .eq('active', true);
+      .eq('activa', true);
 
     if (error) {
       console.error('Error obteniendo suscripciones:', error);
@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
     if (expiredSubscriptions.length > 0) {
       await supabase
         .from('push_subscriptions')
-        .update({ active: false })
+        .update({ activa: false })
         .in('id', expiredSubscriptions);
       
       console.log(`🗑️ Desactivadas ${expiredSubscriptions.length} suscripciones expiradas`);
