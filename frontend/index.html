@@ -11085,6 +11085,7 @@
             
             try {
                 const subscriptionJson = subscription.toJSON();
+                debugLog('📤 Guardando suscripción push...', 'info');
                 
                 const { data, error } = await supabase
                     .from('push_subscriptions')
@@ -11101,12 +11102,12 @@
                     });
                 
                 if (error) {
-                    console.error('❌ Error guardando suscripción:', error);
+                    debugLog(`❌ Error guardando suscripción: ${error.message}`, 'error');
                 } else {
-                    console.log('✅ Suscripción guardada en BD');
+                    debugLog('✅ Push subscription guardada!', 'success');
                 }
             } catch (error) {
-                console.error('❌ Error guardando suscripción:', error);
+                debugLog(`❌ Error: ${error.message}`, 'error');
             }
         }
         
@@ -11151,21 +11152,36 @@
         
         // Inicializar Push al cargar (después del login)
         async function inicializarWebPush() {
-            console.log('🚀 Inicializando Web Push...');
+            debugLog('🚀 Inicializando Web Push...', 'info');
             
             // 1. Registrar Service Worker
-            await registrarServiceWorker();
+            const sw = await registrarServiceWorker();
+            if (sw) {
+                debugLog('✅ Service Worker OK', 'success');
+            } else {
+                debugLog('❌ Service Worker falló', 'error');
+            }
             
             // 2. Si hay usuario logueado, intentar suscribir
             if (currentUser) {
+                debugLog(`Permiso actual: ${Notification.permission}`, 'info');
+                
                 // Solo preguntar si no ha denegado antes
                 if (Notification.permission === 'default') {
                     // Mostrar mensaje explicativo antes de pedir permiso
-                    setTimeout(() => {
-                        suscribirAPush();
+                    setTimeout(async () => {
+                        const sub = await suscribirAPush();
+                        if (sub) {
+                            debugLog('🔔 Suscripción push activa!', 'success');
+                        }
                     }, 3000); // Esperar 3 segundos después del login
                 } else if (Notification.permission === 'granted') {
-                    await suscribirAPush();
+                    const sub = await suscribirAPush();
+                    if (sub) {
+                        debugLog('🔔 Suscripción push activa!', 'success');
+                    }
+                } else {
+                    debugLog('⚠️ Notificaciones bloqueadas', 'warning');
                 }
             }
         }
@@ -11350,17 +11366,33 @@
             
             // Función auxiliar para manejar notificaciones
             const manejarNotificacion = async (titulo, descripcion, callback) => {
-                console.log(`🔔 NOTIFICACIÓN: ${titulo} - ${descripcion}`);
+                debugLog(`🔔 ${titulo}: ${descripcion}`, 'success');
                 
                 // 1. Reproducir sonido (garantizado)
                 try {
                     reproducirSonidoNotificacion();
-                } catch(e) { console.log('Error sonido:', e); }
+                } catch(e) { debugLog('Error sonido: ' + e, 'error'); }
                 
                 // 2. Mostrar toast visual
                 mostrarNotificacionVisual(titulo, descripcion);
                 
-                // 3. Animar campanita
+                // 3. Mostrar notificación del navegador (si tiene permiso)
+                if (Notification.permission === 'granted') {
+                    try {
+                        new Notification(titulo, {
+                            body: descripcion,
+                            icon: '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+                            badge: '/assets/images/INSIGNIA_I.E.ANTONIO_TORRES_ARAUJO.png',
+                            vibrate: [200, 100, 200],
+                            tag: 'ata-' + Date.now(),
+                            requireInteraction: true
+                        });
+                    } catch(e) {
+                        debugLog('Error notificación navegador: ' + e, 'warning');
+                    }
+                }
+                
+                // 4. Animar campanita
                 animarCampanita();
                 
                 // 4. Actualizar contador
