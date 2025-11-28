@@ -11569,9 +11569,48 @@
                             if (esDeHijo) {
                                 debugLog('🚨 ¡INCIDENCIA DE TU HIJO!', 'success');
                                 const inc = incidencia;
+                                
+                                // Determinar tipo y obtener nombre del catálogo
+                                let tipoTexto = '';
+                                let nombreIncidencia = inc.descripcion || '';
+                                
+                                if (inc.tipo === 'merito') {
+                                    tipoTexto = '🏆 MÉRITO';
+                                    // Obtener nombre del catálogo de méritos
+                                    if (inc.catalogo_merito_id) {
+                                        try {
+                                            const { data: merito } = await supabase
+                                                .from('catalogo_meritos')
+                                                .select('nombre')
+                                                .eq('id', inc.catalogo_merito_id)
+                                                .maybeSingle();
+                                            if (merito) nombreIncidencia = merito.nombre;
+                                        } catch(e) {}
+                                    }
+                                } else {
+                                    tipoTexto = '⚠️ DEMÉRITO';
+                                    // Obtener nombre del catálogo de deméritos
+                                    if (inc.catalogo_demerito_id) {
+                                        try {
+                                            const { data: demerito } = await supabase
+                                                .from('catalogo_demeritos')
+                                                .select('nombre, severidad')
+                                                .eq('id', inc.catalogo_demerito_id)
+                                                .maybeSingle();
+                                            if (demerito) {
+                                                nombreIncidencia = demerito.nombre;
+                                                // Añadir severidad si existe
+                                                if (demerito.severidad) {
+                                                    tipoTexto += ` (${demerito.severidad.toUpperCase()})`;
+                                                }
+                                            }
+                                        } catch(e) {}
+                                    }
+                                }
+                                
                                 await manejarNotificacion(
                                     '🚨 Incidencia de tu hijo/a', 
-                                    `Tipo: ${inc.tipo_incidencia || 'No especificado'}\nMotivo: ${(inc.descripcion || inc.motivo || 'Sin descripción').substring(0, 100)}`,
+                                    `${tipoTexto}\n${nombreIncidencia || 'Sin descripción'}`,
                                     () => cargarNotificacionesUsuario()
                                 );
                             } else {
