@@ -4065,7 +4065,17 @@
         // Configuración de Supabase
         const SUPABASE_URL = 'https://jbdjlivrfkrcivkrnuio.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZGpsaXZyZmtyY2l2a3JudWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNDA5ODgsImV4cCI6MjA3ODcxNjk4OH0.eZnzV0EJgVtYe_evH-xQX5gmT8T6uKI09D3PRUB0fcI';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Crear cliente Supabase con persistencia de sesión en localStorage
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                storageKey: 'agenda-ata-auth',
+                storage: window.localStorage,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
         
         // Usuarios de prueba según roles acordados en las charlas
         const users = {
@@ -7306,7 +7316,14 @@
         // Verificar si hay sesión activa al cargar la página
         async function checkExistingSession() {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                console.log('🔍 Verificando sesión existente...');
+                
+                // PRIMERO: Intentar sesión de Supabase Auth
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.log('⚠️ Error obteniendo sesión:', sessionError.message);
+                }
                 
                 if (session && session.user) {
                     console.log('🔐 Sesión activa encontrada:', session.user.email);
@@ -7319,6 +7336,15 @@
                         .single();
                     
                     if (userData && !error) {
+                        // Verificar que la cuenta esté activada
+                        if (!userData.activado) {
+                            console.log('⚠️ Cuenta no activada, cerrando sesión');
+                            await supabase.auth.signOut();
+                            localStorage.removeItem('currentUser');
+                            localStorage.removeItem('isLoggedIn');
+                            return false;
+                        }
+                        
                         // Definir permisos según el rol
                         const rolePermissions = {
                             'docente': ['incidencias', 'historial'],
@@ -7343,11 +7369,55 @@
                             aulas_asignadas: userData.aulas_asignadas || null
                         };
                         
+                        // Guardar en localStorage para persistencia
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        localStorage.setItem('isLoggedIn', 'true');
+                        
                         selectedUserRole = userData.role;
                         console.log('✅ Sesión restaurada para:', currentUser.name);
                         console.log('🏫 Aulas asignadas cargadas:', currentUser.aulas_asignadas);
                         login();
                         return true;
+                    }
+                }
+                
+                // SEGUNDO: Fallback a localStorage si Supabase Auth no tiene sesión
+                const isLoggedIn = localStorage.getItem('isLoggedIn');
+                const storedUser = localStorage.getItem('currentUser');
+                
+                if (isLoggedIn === 'true' && storedUser) {
+                    try {
+                        const parsedUser = JSON.parse(storedUser);
+                        
+                        // Verificar que el usuario aún existe y está activado en la BD
+                        const { data: userData, error } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', parsedUser.id)
+                            .single();
+                        
+                        if (userData && !error && userData.activado) {
+                            currentUser = {
+                                ...parsedUser,
+                                // Actualizar datos desde BD
+                                name: userData.nombre_completo || parsedUser.name,
+                                email: userData.email || parsedUser.email,
+                                role: userData.role || parsedUser.role
+                            };
+                            selectedUserRole = currentUser.role;
+                            console.log('✅ Sesión restaurada desde localStorage:', currentUser.name);
+                            login();
+                            return true;
+                        } else {
+                            // Usuario no existe o no está activado, limpiar sesión
+                            console.log('⚠️ Usuario de localStorage no válido, limpiando sesión');
+                            localStorage.removeItem('currentUser');
+                            localStorage.removeItem('isLoggedIn');
+                        }
+                    } catch(e) {
+                        console.error('Error parseando localStorage:', e);
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('isLoggedIn');
                     }
                 }
             } catch (err) {
@@ -8091,14 +8161,45 @@
             messageContainer.className = 'form-message info show';
             
             try {
-                // Crear usuario en Supabase Auth con el email verificado
+                // Intentar crear usuario en Supabase Auth con el email verificado
+                let authSuccess = false;
+                
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: window.emailVerificado,
                     password: password
                 });
                 
                 if (authError) {
-                    throw authError;
+                    // Si el error es que el usuario ya existe, intentar hacer login
+                    if (authError.message.includes('already registered') || 
+                        authError.message.includes('already exists') ||
+                        authError.message.includes('User already registered')) {
+                        console.log('⚠️ Usuario ya existe en Auth, intentando actualizar contraseña...');
+                        
+                        // Intentar login con la nueva contraseña (por si ya la cambió antes)
+                        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                            email: window.emailVerificado,
+                            password: password
+                        });
+                        
+                        if (loginError) {
+                            // Si el login falla, puede ser que tenga otra contraseña
+                            // Sugerir recuperar contraseña
+                            throw new Error('Este email ya tiene una cuenta. Si olvidaste tu contraseña, usa "Recuperar contraseña".');
+                        }
+                        
+                        authSuccess = true;
+                        console.log('✅ Login exitoso con credenciales existentes');
+                    } else {
+                        throw authError;
+                    }
+                } else {
+                    authSuccess = true;
+                    console.log('✅ Usuario creado en Auth exitosamente');
+                }
+                
+                if (!authSuccess) {
+                    throw new Error('No se pudo crear o verificar la cuenta de autenticación');
                 }
                 
                 // Actualizar campos en la tabla users: DNI + email + teléfono + activado=true
@@ -8142,6 +8243,10 @@
                         dni: window.cuentaVerificada.dni,
                         id: window.cuentaVerificada.id
                     };
+                    
+                    // Guardar sesión en localStorage para persistencia
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('isLoggedIn', 'true');
                     
                     console.log('✅ Auto-login después de activación:', currentUser);
                     
@@ -10526,7 +10631,8 @@
                         email: solicitud.email,
                         telefono: solicitud.telefono,
                         role: solicitud.role,
-                        activo: true
+                        activo: true,
+                        activado: false  // Cuenta aprobada pero aún no activada (sin contraseña)
                     }]);
                 
                 if (errorCrear) throw errorCrear;
