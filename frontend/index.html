@@ -12645,26 +12645,82 @@
                                 <small style="color: #666;">Tu mensaje original:</small>
                                 <p style="margin: 5px 0 0 0; color: #333;">${msg.mensaje}</p>
                             </div>
-                            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid var(--color-ata-azul);">
-                                <small style="color: var(--color-ata-azul);"><i class="fas fa-user-shield"></i> Respuesta:</small>
+                            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid var(--color-ata-azul); margin-bottom: 15px;">
+                                <small style="color: var(--color-ata-azul);"><i class="fas fa-user-shield"></i> Respuesta del Admin:</small>
                                 <p style="margin: 8px 0 0 0; color: #333; line-height: 1.6;">${msg.respuesta_admin}</p>
+                            </div>
+                            
+                            <!-- Campo para responder al admin -->
+                            <div style="border-top: 1px solid #ddd; padding-top: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #495057;">
+                                    <i class="fas fa-pen" style="margin-right: 5px; color: var(--color-ata-verde);"></i>¿Deseas responder?
+                                </label>
+                                <textarea id="respuestaUsuarioAlAdmin" class="swal2-textarea" placeholder="Escribe tu respuesta aquí (opcional)..." style="width: 100%; margin: 0; min-height: 80px; resize: vertical; font-size: 14px;"></textarea>
                             </div>
                         </div>
                     `,
                     width: 550,
-                    confirmButtonText: 'Entendido',
-                    confirmButtonColor: 'var(--color-ata-verde)'
-                }).then(async () => {
-                    // Marcar como vista
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-paper-plane"></i> Enviar respuesta',
+                    cancelButtonText: '<i class="fas fa-check"></i> Solo marcar leído',
+                    confirmButtonColor: 'var(--color-ata-verde)',
+                    cancelButtonColor: 'var(--color-ata-azul)',
+                    preConfirm: () => {
+                        const respuesta = document.getElementById('respuestaUsuarioAlAdmin')?.value?.trim();
+                        if (!respuesta) {
+                            Swal.showValidationMessage('Escribe algo para enviar, o usa "Solo marcar leído"');
+                            return false;
+                        }
+                        return respuesta;
+                    }
+                }).then(async (result) => {
+                    // Marcar como vista siempre
                     await supabase
                         .from('mensajes_soporte')
                         .update({ respuesta_vista: true })
                         .eq('id', id);
+                    
+                    if (result.isConfirmed && result.value) {
+                        // Usuario quiere responder - crear nuevo mensaje
+                        await enviarRespuestaUsuarioAlAdmin(msg, result.value);
+                    }
+                    
                     cargarNotificacionesUsuario();
                 });
                 
             } catch (error) {
                 console.error('Error:', error);
+            }
+        }
+        
+        // Enviar respuesta del usuario al admin (nuevo mensaje en el hilo)
+        async function enviarRespuestaUsuarioAlAdmin(mensajeOriginal, respuesta) {
+            try {
+                // Crear nuevo mensaje de soporte como continuación del hilo
+                const nuevoMensaje = {
+                    remitente_id: currentUser.id,
+                    remitente_nombre: currentUser.nombre || currentUser.name || currentUser.nombre_completo || 'Usuario',
+                    remitente_email: currentUser.email || '',
+                    remitente_role: currentUser.role || 'usuario',
+                    mensaje: `📩 Respuesta a: "${mensajeOriginal.respuesta_admin?.substring(0, 50)}..."\n\n${respuesta}`,
+                    leido: false,
+                    respuesta_admin: null,
+                    respuesta_vista: false,
+                    leido_notificado: false,
+                    mensaje_padre_id: mensajeOriginal.id // Referencia al mensaje original (para hilo)
+                };
+                
+                const { error } = await supabase
+                    .from('mensajes_soporte')
+                    .insert([nuevoMensaje]);
+                
+                if (error) throw error;
+                
+                mostrarNotificacion('Respuesta enviada al administrador', 'success');
+                
+            } catch (error) {
+                console.error('Error enviando respuesta:', error);
+                mostrarNotificacion('Error al enviar respuesta', 'error');
             }
         }
         
