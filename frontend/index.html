@@ -7326,6 +7326,20 @@
                 console.error('Error al cerrar sesión:', err);
             }
             
+            // Limpiar canales de Realtime
+            if (canalesActivos && canalesActivos.length > 0) {
+                canalesActivos.forEach(canal => {
+                    try { supabase.removeChannel(canal); } catch(e) {}
+                });
+                canalesActivos = [];
+            }
+            
+            // Limpiar intervalo de polling de confirmaciones
+            if (window.pollingConfirmacionesInterval) {
+                clearInterval(window.pollingConfirmacionesInterval);
+                window.pollingConfirmacionesInterval = null;
+            }
+            
             // Limpiar estado del usuario
             currentUser = null;
             selectedUserRole = null;
@@ -12283,6 +12297,48 @@
                         if (err) debugLog(`Error canal confirmaciones: ${err}`, 'error');
                     });
                 canalesActivos.push(canalConfirmaciones);
+                
+                // POLLING: Verificar confirmaciones de padres cada 15 segundos (respaldo si Realtime falla)
+                let ultimaVerificacion = new Date().toISOString();
+                const intervalPolling = setInterval(async () => {
+                    try {
+                        const { data: confirmadas, error } = await supabase
+                            .from('incidencias')
+                            .select('id, estudiante_id, comentario_padre, revisado_por_padre, fecha_revision_padre, estudiantes!inner(nombre_completo)')
+                            .eq('registrado_por', currentUser.id)
+                            .eq('revisado_por_padre', true)
+                            .gt('fecha_revision_padre', ultimaVerificacion)
+                            .order('fecha_revision_padre', { ascending: false })
+                            .limit(5);
+                        
+                        if (!error && confirmadas && confirmadas.length > 0) {
+                            for (const inc of confirmadas) {
+                                const nombreEstudiante = inc.estudiantes?.nombre_completo || 'un estudiante';
+                                let mensaje = `Incidencia de ${nombreEstudiante} ha sido revisada`;
+                                if (inc.comentario_padre) {
+                                    mensaje += `\n💬 "${inc.comentario_padre.substring(0, 80)}..."`;
+                                }
+                                
+                                await manejarNotificacion(
+                                    '✅ Padre confirmó lectura',
+                                    mensaje,
+                                    async () => {
+                                        if (typeof renderizarHistorial === 'function') {
+                                            await renderizarHistorial();
+                                        }
+                                    }
+                                );
+                            }
+                            // Actualizar última verificación
+                            ultimaVerificacion = new Date().toISOString();
+                        }
+                    } catch (e) {
+                        debugLog('Error en polling confirmaciones: ' + e, 'warning');
+                    }
+                }, 15000); // Cada 15 segundos
+                
+                // Guardar referencia para limpiar después
+                window.pollingConfirmacionesInterval = intervalPolling;
             }
             
             debugLog(`✅ ${canalesActivos.length} canales activos para ${role}`, 'success');
