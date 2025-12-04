@@ -12109,9 +12109,10 @@
                     .on('postgres_changes',
                         { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte' },
                         async (payload) => {
-                            // Verificar si es para este usuario
-                            if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
-                                // Solo notificar si hay respuesta nueva
+                            // Verificar si es mensaje de este padre
+                            if (payload.new.remitente_id === currentUser.id) {
+                                
+                                // Caso 1: Admin respondió al mensaje
                                 const oldResp = payload.old?.respuesta_admin || '';
                                 const newResp = payload.new.respuesta_admin || '';
                                 
@@ -12120,6 +12121,20 @@
                                     await manejarNotificacion(
                                         '📩 Te ha respondido el Administrador', 
                                         `"${newResp.substring(0, 120)}${newResp.length > 120 ? '...' : ''}"`,
+                                        () => cargarNotificacionesUsuario()
+                                    );
+                                }
+                                
+                                // Caso 2: Admin marcó como leído (sin respuesta)
+                                const oldLeido = payload.old?.leido || false;
+                                const newLeido = payload.new?.leido || false;
+                                const sinRespuesta = !payload.new.respuesta_admin;
+                                
+                                if (!oldLeido && newLeido && sinRespuesta) {
+                                    debugLog('✓ ADMIN LEYÓ TU MENSAJE!', 'success');
+                                    await manejarNotificacion(
+                                        '✓ Mensaje visto', 
+                                        'El administrador ha visto tu mensaje de ayuda',
                                         () => cargarNotificacionesUsuario()
                                     );
                                 }
@@ -12139,18 +12154,32 @@
                     .on('postgres_changes',
                         { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte' },
                         async (payload) => {
-                            // Verificar si es para este usuario Y si hay respuesta (no solo leído)
-                            if (payload.new.remitente_id === currentUser.id && payload.new.respuesta_admin) {
-                                // Solo notificar si hay respuesta real, no cuando solo leen
+                            // Verificar si es mensaje de este usuario
+                            if (payload.new.remitente_id === currentUser.id) {
+                                
+                                // Caso 1: Admin respondió al mensaje
                                 const oldResp = payload.old?.respuesta_admin || '';
                                 const newResp = payload.new.respuesta_admin || '';
                                 
-                                // Solo notificar si la respuesta es nueva
                                 if (newResp && newResp !== oldResp) {
                                     debugLog('💬 RESPUESTA DEL ADMIN!', 'success');
                                     await manejarNotificacion(
                                         '📩 Te ha respondido el Administrador', 
                                         `"${newResp.substring(0, 120)}${newResp.length > 120 ? '...' : ''}"`,
+                                        () => cargarNotificacionesUsuario()
+                                    );
+                                }
+                                
+                                // Caso 2: Admin marcó como leído (sin respuesta)
+                                const oldLeido = payload.old?.leido || false;
+                                const newLeido = payload.new?.leido || false;
+                                const sinRespuesta = !payload.new.respuesta_admin;
+                                
+                                if (!oldLeido && newLeido && sinRespuesta) {
+                                    debugLog('✓ ADMIN LEYÓ TU MENSAJE!', 'success');
+                                    await manejarNotificacion(
+                                        '✓ Mensaje visto', 
+                                        'El administrador ha visto tu mensaje de ayuda',
                                         () => cargarNotificacionesUsuario()
                                     );
                                 }
