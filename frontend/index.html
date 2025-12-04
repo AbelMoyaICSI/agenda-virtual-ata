@@ -10400,13 +10400,15 @@
         
         async function eliminarUsuario(userId) {
             const confirmar = await mostrarConfirmacion(
-                '¿Está seguro de eliminar este usuario?<br><br><strong style="color:#e74c3c">Esta acción NO se puede deshacer.</strong>',
+                '¿Está seguro de eliminar este usuario?<br><br><strong style="color:#e74c3c">Esta acción NO se puede deshacer.</strong><br><small>Se eliminará completamente del sistema (datos y acceso).</small>',
                 '⚠️ Eliminar Usuario',
                 { tipo: 'warning', btnConfirmar: 'Eliminar', peligroso: true }
             );
             if (!confirmar) return;
             
             try {
+                // Eliminar de la tabla users
+                // El trigger en la BD automáticamente elimina de auth.users
                 const { error } = await supabase
                     .from('users')
                     .delete()
@@ -10414,11 +10416,12 @@
                 
                 if (error) throw error;
                 
-                mostrarNotificacion('Usuario eliminado correctamente', 'success');
+                mostrarNotificacion('✅ Usuario eliminado completamente del sistema', 'success');
                 cargarUsuariosAdmin();
+                cargarDashboardAdmin();
             } catch (error) {
-                console.error('Error:', error);
-                mostrarNotificacion('Error al eliminar usuario', 'error');
+                console.error('Error eliminando usuario:', error);
+                mostrarNotificacion('Error al eliminar usuario: ' + error.message, 'error');
             }
         }
         
