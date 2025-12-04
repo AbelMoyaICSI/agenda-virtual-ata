@@ -8331,9 +8331,11 @@
                         username: window.cuentaVerificada.dni || window.emailVerificado,
                         email: window.emailVerificado,
                         role: window.cuentaVerificada.role,
+                        name: window.cuentaVerificada.nombre_completo || 'Usuario',
                         nombre: window.cuentaVerificada.nombre_completo,
                         dni: window.cuentaVerificada.dni,
-                        id: window.cuentaVerificada.id
+                        id: window.cuentaVerificada.id,
+                        permissions: ['incidencias', 'historial']
                     };
                     
                     // Guardar sesión en localStorage para persistencia
