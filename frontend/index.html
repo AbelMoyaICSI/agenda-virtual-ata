@@ -10370,8 +10370,8 @@
                 const cuentaActivada = user.activado === true;
                 
                 return `
-                <tr>
-                    <td style="width: 40px; text-align: center;">
+                <tr onclick="toggleFilaUsuario(event, '${user.id}')" style="cursor: pointer;" class="fila-seleccionable">
+                    <td style="width: 40px; text-align: center;" onclick="event.stopPropagation()">
                         <input type="checkbox" class="checkbox-usuario" data-userid="${user.id}" data-username="${user.nombre_completo || user.email}" onchange="actualizarSeleccionUsuarios()">
                     </td>
                     <td>${user.nombre_completo || 'Sin nombre'}</td>
@@ -10388,7 +10388,7 @@
                         </span>
                     </td>
                     <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                    <td>
+                    <td onclick="event.stopPropagation()">
                         <div class="btn-group">
                             <button class="btn btn-info btn-xs" onclick="editarUsuario('${user.id}')" title="Editar">
                                 <i class="fas fa-edit"></i>
@@ -10415,12 +10415,40 @@
             actualizarSeleccionUsuarios();
         }
         
+        function toggleFilaUsuario(event, userId) {
+            // Toggle el checkbox cuando se hace clic en la fila
+            const checkbox = document.querySelector(`.checkbox-usuario[data-userid="${userId}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                actualizarSeleccionUsuarios();
+                
+                // Efecto visual de selección
+                const fila = checkbox.closest('tr');
+                if (checkbox.checked) {
+                    fila.style.background = 'rgba(52, 152, 219, 0.15)';
+                } else {
+                    fila.style.background = '';
+                }
+            }
+        }
+        
         function actualizarSeleccionUsuarios() {
             const checkboxes = document.querySelectorAll('.checkbox-usuario:checked');
-            const total = document.querySelectorAll('.checkbox-usuario').length;
+            const allCheckboxes = document.querySelectorAll('.checkbox-usuario');
+            const total = allCheckboxes.length;
             const seleccionados = checkboxes.length;
             
             document.getElementById('contadorSeleccionUsuarios').textContent = seleccionados;
+            
+            // Actualizar estilo visual de las filas
+            allCheckboxes.forEach(cb => {
+                const fila = cb.closest('tr');
+                if (cb.checked) {
+                    fila.style.background = 'rgba(52, 152, 219, 0.15)';
+                } else {
+                    fila.style.background = '';
+                }
+            });
             
             // Actualizar estado del checkbox "seleccionar todos"
             const selectAll = document.getElementById('selectAllUsuarios');
@@ -10446,6 +10474,10 @@
         function ocultarBarraAccionesUsuarios() {
             document.getElementById('barraAccionesMasivasUsuarios').style.display = 'none';
             document.getElementById('contadorSeleccionUsuarios').textContent = '0';
+            // Limpiar estilos de filas
+            document.querySelectorAll('.checkbox-usuario').forEach(cb => {
+                cb.closest('tr').style.background = '';
+            });
         }
         
         function deseleccionarTodosUsuarios() {
@@ -13865,8 +13897,8 @@
                 }
                 
                 return `
-                <tr>
-                    <td style="width: 40px; text-align: center;">
+                <tr onclick="toggleFilaEstudiante(event, '${est.id}')" style="cursor: pointer;" class="fila-seleccionable">
+                    <td style="width: 40px; text-align: center;" onclick="event.stopPropagation()">
                         <input type="checkbox" class="checkbox-estudiante" data-estudianteid="${est.id}" data-estudiantenombre="${est.nombre_completo || 'Sin nombre'}" data-grado="${est.grado}" data-seccion="${est.seccion}" onchange="actualizarSeleccionEstudiantes()">
                     </td>
                     <td>${est.nombre_completo || 'Sin nombre'}</td>
@@ -13889,7 +13921,7 @@
                             ${estadoCuenta}
                         </span>
                     </td>
-                    <td>
+                    <td onclick="event.stopPropagation()">
                         <div class="btn-group">
                             <button class="btn btn-info btn-xs" onclick="verDetalleEstudiante('${est.id}')" title="Ver detalle">
                                 <i class="fas fa-eye"></i>
@@ -13913,12 +13945,40 @@
             actualizarSeleccionEstudiantes();
         }
         
+        function toggleFilaEstudiante(event, estudianteId) {
+            // Toggle el checkbox cuando se hace clic en la fila
+            const checkbox = document.querySelector(`.checkbox-estudiante[data-estudianteid="${estudianteId}"]`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                actualizarSeleccionEstudiantes();
+                
+                // Efecto visual de selección
+                const fila = checkbox.closest('tr');
+                if (checkbox.checked) {
+                    fila.style.background = 'rgba(231, 76, 60, 0.15)';
+                } else {
+                    fila.style.background = '';
+                }
+            }
+        }
+        
         function actualizarSeleccionEstudiantes() {
             const checkboxes = document.querySelectorAll('.checkbox-estudiante:checked');
-            const total = document.querySelectorAll('.checkbox-estudiante').length;
+            const allCheckboxes = document.querySelectorAll('.checkbox-estudiante');
+            const total = allCheckboxes.length;
             const seleccionados = checkboxes.length;
             
             document.getElementById('contadorSeleccionEstudiantes').textContent = seleccionados;
+            
+            // Actualizar estilo visual de las filas
+            allCheckboxes.forEach(cb => {
+                const fila = cb.closest('tr');
+                if (cb.checked) {
+                    fila.style.background = 'rgba(231, 76, 60, 0.15)';
+                } else {
+                    fila.style.background = '';
+                }
+            });
             
             // Actualizar estado del checkbox "seleccionar todos"
             const selectAll = document.getElementById('selectAllEstudiantes');
@@ -13944,6 +14004,10 @@
         function ocultarBarraAccionesEstudiantes() {
             document.getElementById('barraAccionesMasivasEstudiantes').style.display = 'none';
             document.getElementById('contadorSeleccionEstudiantes').textContent = '0';
+            // Limpiar estilos de filas
+            document.querySelectorAll('.checkbox-estudiante').forEach(cb => {
+                cb.closest('tr').style.background = '';
+            });
         }
         
         function deseleccionarTodosEstudiantes() {
