@@ -25,9 +25,10 @@ CREATE OR REPLACE FUNCTION sync_user_on_auth_create()
 RETURNS TRIGGER AS $$
 BEGIN
     -- 1. Sincronizar UUID y marcar activado en public.users
+    -- También preservar DNI y teléfono si ya existen
     UPDATE public.users
     SET 
-        id = NEW.id,           -- Sincronizar el UUID
+        id = NEW.id,           -- Sincronizar el UUID con auth.users
         activado = true        -- Marcar como activado automáticamente
     WHERE email = NEW.email;
     

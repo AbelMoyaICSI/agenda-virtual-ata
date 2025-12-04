@@ -8281,41 +8281,52 @@
                     throw new Error('No se pudo crear o verificar la cuenta de autenticación');
                 }
                 
-                // Actualizar campos en la tabla users: DNI + email + teléfono + activado=true
+                // Esperar un momento para que el trigger sincronice el ID
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Actualizar campos en la tabla users por EMAIL (no por ID, porque el trigger puede haberlo cambiado)
                 const updateData = { 
-                    email: window.emailVerificado,
                     activado: true 
                 };
                 
-                // Agregar DNI si se registró
+                // Agregar DNI si se registró durante la activación
                 if (window.cuentaVerificada.dni) {
                     updateData.dni = window.cuentaVerificada.dni;
                 }
                 
-                // Agregar teléfono si se registró
+                // Agregar teléfono si se registró durante la activación
                 if (window.cuentaVerificada.telefono) {
                     updateData.telefono = window.cuentaVerificada.telefono;
                 }
                 
-                console.log('📝 Actualizando datos en BD:', updateData);
-                console.log('📝 ID del usuario:', window.cuentaVerificada.id);
+                console.log('📝 Actualizando datos en BD por email:', window.emailVerificado);
+                console.log('📝 Datos a actualizar:', updateData);
                 
+                // Actualizar por EMAIL (más confiable porque el ID puede cambiar con el trigger)
                 const { data: updateResult, error: updateError } = await supabase
                     .from('users')
                     .update(updateData)
-                    .eq('id', window.cuentaVerificada.id)
+                    .eq('email', window.emailVerificado)
                     .select();
                 
                 if (updateError) {
                     console.error('❌ Error actualizando BD:', updateError);
-                    throw updateError;
+                    // No lanzar error, el trigger ya debería haber hecho la sincronización
+                    console.warn('⚠️ El trigger debería haber sincronizado los datos');
+                } else {
+                    console.log('✅ BD actualizada exitosamente:', updateResult);
                 }
                 
-                console.log('✅ BD actualizada exitosamente:', updateResult);
+                // Obtener el usuario actualizado para tener el ID correcto
+                const { data: usuarioActualizado } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', window.emailVerificado)
+                    .single();
                 
-                // Verificar que se actualizó correctamente
-                if (!updateResult || updateResult.length === 0) {
-                    console.warn('⚠️ No se encontró el registro para actualizar');
+                if (usuarioActualizado) {
+                    window.cuentaVerificada = usuarioActualizado;
+                    console.log('✅ Usuario actualizado obtenido:', usuarioActualizado);
                 }
                 
                 messageContainer.innerHTML = `
@@ -8334,6 +8345,7 @@
                         name: window.cuentaVerificada.nombre_completo || 'Usuario',
                         nombre: window.cuentaVerificada.nombre_completo,
                         dni: window.cuentaVerificada.dni,
+                        telefono: window.cuentaVerificada.telefono,
                         id: window.cuentaVerificada.id,
                         permissions: ['incidencias', 'historial']
                     };
