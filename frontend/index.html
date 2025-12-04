@@ -11994,6 +11994,46 @@
                         debugLog(`Canal soporte: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
                     });
                 canalesActivos.push(canalSoporte);
+                
+                // ADMIN: Recibe notificación cuando usuario marca como leído su respuesta
+                const canalLectura = supabase
+                    .channel('admin-lectura-' + Date.now())
+                    .on('postgres_changes',
+                        { event: 'UPDATE', schema: 'public', table: 'mensajes_soporte' },
+                        async (payload) => {
+                            // Caso 1: Usuario leyó la respuesta del admin (respuesta_vista cambió a true)
+                            const oldRespuestaVista = payload.old?.respuesta_vista || false;
+                            const newRespuestaVista = payload.new?.respuesta_vista || false;
+                            const tieneRespuesta = payload.new?.respuesta_admin;
+                            
+                            if (!oldRespuestaVista && newRespuestaVista && tieneRespuesta) {
+                                debugLog('👁️ USUARIO LEYÓ TU RESPUESTA!', 'success');
+                                const msg = payload.new;
+                                await manejarNotificacion(
+                                    '👁️ Tu respuesta fue leída', 
+                                    `${msg.remitente_nombre || 'Usuario'} (${msg.remitente_role || ''}) ha leído tu mensaje`,
+                                    async () => {
+                                        await cargarMensajesSoporte();
+                                        await cargarTablaSoporte();
+                                    }
+                                );
+                            }
+                            
+                            // Caso 2: Admin marcó mensaje como leído (sin respuesta aún)
+                            const oldLeido = payload.old?.leido || false;
+                            const newLeido = payload.new?.leido || false;
+                            
+                            // Solo notificar si se marcó como leído Y NO tiene respuesta (solo lectura)
+                            if (!oldLeido && newLeido && !tieneRespuesta) {
+                                debugLog('✓ Mensaje marcado como leído (sin respuesta)', 'info');
+                                // No notificar aquí - el usuario ya ve en su panel que fue leído
+                            }
+                        }
+                    )
+                    .subscribe((status, err) => {
+                        debugLog(`Canal lectura: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
+                    });
+                canalesActivos.push(canalLectura);
             }
             
             if (esPadre) {
