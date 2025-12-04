@@ -1,5 +1,5 @@
 -- =====================================================
--- MIGRACIÓN 007: Sincronización automática auth.users ↔ users
+-- MIGRACIÓN 007: Sincronización COMPLETA automática
 -- Ejecutar en: Supabase SQL Editor
 -- Fecha: Diciembre 2025
 -- =====================================================
@@ -8,30 +8,39 @@
 -- 2. Su registro en public.users tiene un UUID diferente
 -- 3. La política RLS no permite actualizar porque id != auth.uid()
 -- 4. El campo 'activado' no se actualiza a true
+-- 5. El email_confirmed_at queda NULL → Error "Email not confirmed"
 --
--- SOLUCIÓN: 
--- 1. Trigger que sincroniza el id de users con auth.users por email
--- 2. Política RLS que permite actualizar por email
+-- SOLUCIÓN COMPLETA AUTOMÁTICA:
+-- 1. Trigger que sincroniza id de users con auth.users
+-- 2. Trigger que confirma email automáticamente
+-- 3. Marca activado=true automáticamente
 -- =====================================================
 
 -- =====================================================
--- PARTE 1: Función y Trigger para sincronizar IDs
+-- PARTE 1: Función y Trigger para sincronizar TODO
 -- =====================================================
 
--- Función que sincroniza el ID y marca activado cuando se crea usuario en Auth
+-- Función que sincroniza el ID, marca activado Y confirma email
 CREATE OR REPLACE FUNCTION sync_user_on_auth_create()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Cuando se crea un usuario en auth.users,
-    -- actualizar el registro en public.users que tenga el mismo email
+    -- 1. Sincronizar UUID y marcar activado en public.users
     UPDATE public.users
     SET 
         id = NEW.id,           -- Sincronizar el UUID
         activado = true        -- Marcar como activado automáticamente
     WHERE email = NEW.email;
     
-    -- Log para debugging
-    RAISE NOTICE 'Usuario sincronizado: % -> activado=true', NEW.email;
+    -- 2. Confirmar email automáticamente en auth.users
+    -- (Porque ya verificamos el email con OTP durante la activación)
+    UPDATE auth.users
+    SET 
+        email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+        updated_at = NOW()
+    WHERE id = NEW.id
+    AND email_confirmed_at IS NULL;
+    
+    RAISE NOTICE 'Usuario sincronizado y email confirmado: %', NEW.email;
     
     RETURN NEW;
 END;
@@ -68,10 +77,10 @@ CREATE POLICY "users_update_activacion" ON public.users
   );
 
 -- =====================================================
--- PARTE 3: Sincronizar usuarios existentes que ya se registraron
+-- PARTE 3: Sincronizar TODOS los usuarios existentes
 -- =====================================================
 
--- Actualizar usuarios que ya tienen cuenta en auth pero no están sincronizados
+-- 3.1 Sincronizar IDs de usuarios que ya tienen cuenta en auth
 UPDATE public.users u
 SET 
     id = a.id,
@@ -80,7 +89,7 @@ FROM auth.users a
 WHERE u.email = a.email
 AND u.id != a.id;
 
--- También marcar activado=true para usuarios cuyo ID ya coincide con auth
+-- 3.2 Marcar activado=true para usuarios cuyo ID ya coincide
 UPDATE public.users u
 SET activado = true
 WHERE EXISTS (
@@ -88,11 +97,19 @@ WHERE EXISTS (
 )
 AND (u.activado IS NULL OR u.activado = false);
 
+-- 3.3 CONFIRMAR EMAIL de TODOS los usuarios existentes en auth
+-- (Para evitar "Email not confirmed" en cualquier cuenta)
+UPDATE auth.users
+SET 
+    email_confirmed_at = COALESCE(email_confirmed_at, NOW()),
+    updated_at = NOW()
+WHERE email_confirmed_at IS NULL;
+
 -- =====================================================
--- VERIFICACIÓN
+-- VERIFICACIÓN COMPLETA
 -- =====================================================
 
--- Ver usuarios y su estado de sincronización
+-- Ver usuarios y su estado COMPLETO
 SELECT 
     u.nombre_completo,
     u.email,
@@ -100,7 +117,8 @@ SELECT
     a.id as auth_id,
     CASE WHEN u.id = a.id THEN '✅ Sincronizado' ELSE '❌ Desincronizado' END as sync_status,
     u.activo,
-    u.activado
+    u.activado,
+    CASE WHEN a.email_confirmed_at IS NOT NULL THEN '✅ Confirmado' ELSE '❌ Sin confirmar' END as email_status
 FROM public.users u
 LEFT JOIN auth.users a ON u.email = a.email
 ORDER BY u.created_at DESC;
