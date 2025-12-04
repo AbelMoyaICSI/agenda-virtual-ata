@@ -3712,11 +3712,32 @@
                                 </button>
                             </div>
                             
+                            <!-- Barra de acciones masivas (oculta por defecto) -->
+                            <div id="barraAccionesMasivasUsuarios" style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                    <span>
+                                        <i class="fas fa-check-square"></i> 
+                                        <strong id="contadorSeleccionUsuarios">0</strong> usuario(s) seleccionado(s)
+                                    </span>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn" onclick="eliminarUsuariosSeleccionados()" style="background: white; color: #e74c3c; border: none;">
+                                            <i class="fas fa-trash"></i> Eliminar Seleccionados
+                                        </button>
+                                        <button class="btn" onclick="deseleccionarTodosUsuarios()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid white;">
+                                            <i class="fas fa-times"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Tabla de usuarios -->
                             <div style="overflow-x: auto;">
                                 <table class="data-table" id="tablaUsuariosAdmin">
                                     <thead>
                                         <tr>
+                                            <th style="width: 40px;">
+                                                <input type="checkbox" id="selectAllUsuarios" onclick="toggleSelectAllUsuarios(this)" title="Seleccionar todos">
+                                            </th>
                                             <th>Nombre Completo</th>
                                             <th>Email</th>
                                             <th>Rol</th>
@@ -3727,7 +3748,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyUsuariosAdmin">
-                                        <tr><td colspan="7" style="text-align: center;">Cargando usuarios...</td></tr>
+                                        <tr><td colspan="8" style="text-align: center;">Cargando usuarios...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -3833,9 +3854,32 @@
                                     <option value="D">Sección D</option>
                                     <option value="E">Sección E</option>
                                 </select>
-                                <button class="btn btn-secondary" onclick="cargarEstudiantesAdmin()">
-                                    <i class="fas fa-sync"></i> Actualizar
-                                </button>
+                                <div style="display: flex; gap: 5px;">
+                                    <button class="btn btn-secondary" onclick="cargarEstudiantesAdmin()" style="flex: 1;">
+                                        <i class="fas fa-sync"></i> Actualizar
+                                    </button>
+                                    <button class="btn btn-warning" onclick="seleccionarTodosFiltrados()" title="Seleccionar todos los estudiantes mostrados actualmente" style="flex: 1;">
+                                        <i class="fas fa-check-double"></i> Sel. Filtro
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Barra de acciones masivas (oculta por defecto) -->
+                            <div id="barraAccionesMasivasEstudiantes" style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b); padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; color: white;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                    <span>
+                                        <i class="fas fa-check-square"></i> 
+                                        <strong id="contadorSeleccionEstudiantes">0</strong> estudiante(s) seleccionado(s)
+                                    </span>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button class="btn" onclick="eliminarEstudiantesSeleccionados()" style="background: white; color: #e74c3c; border: none;">
+                                            <i class="fas fa-trash"></i> Eliminar Seleccionados
+                                        </button>
+                                        <button class="btn" onclick="deseleccionarTodosEstudiantes()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid white;">
+                                            <i class="fas fa-times"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Tabla de estudiantes -->
@@ -3843,6 +3887,9 @@
                                 <table class="data-table" id="tablaEstudiantesAdmin">
                                     <thead>
                                         <tr>
+                                            <th style="width: 40px;">
+                                                <input type="checkbox" id="selectAllEstudiantes" onclick="toggleSelectAllEstudiantes(this)" title="Seleccionar todos">
+                                            </th>
                                             <th>Nombre Completo</th>
                                             <th>DNI</th>
                                             <th>Grado</th>
@@ -3854,7 +3901,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="tbodyEstudiantesAdmin">
-                                        <tr><td colspan="8" style="text-align: center;">Cargando estudiantes...</td></tr>
+                                        <tr><td colspan="9" style="text-align: center;">Cargando estudiantes...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -10308,8 +10355,12 @@
             const tbody = document.getElementById('tbodyUsuariosAdmin');
             if (!tbody) return;
             
+            // Resetear selecciones al re-renderizar
+            document.getElementById('selectAllUsuarios').checked = false;
+            ocultarBarraAccionesUsuarios();
+            
             if (!usuarios || usuarios.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-users-slash"></i><p>No hay usuarios registrados</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-users-slash"></i><p>No hay usuarios registrados</p></td></tr>';
                 return;
             }
             
@@ -10320,6 +10371,9 @@
                 
                 return `
                 <tr>
+                    <td style="width: 40px; text-align: center;">
+                        <input type="checkbox" class="checkbox-usuario" data-userid="${user.id}" data-username="${user.nombre_completo || user.email}" onchange="actualizarSeleccionUsuarios()">
+                    </td>
                     <td>${user.nombre_completo || 'Sin nombre'}</td>
                     <td>${user.email || 'Sin email'}</td>
                     <td><span class="badge badge-primary">${user.role?.toUpperCase() || 'SIN ROL'}</span></td>
@@ -10352,6 +10406,111 @@
                 </tr>
             `;
             }).join('');
+        }
+        
+        // === FUNCIONES DE SELECCIÓN MÚLTIPLE PARA USUARIOS ===
+        function toggleSelectAllUsuarios(checkbox) {
+            const checkboxes = document.querySelectorAll('.checkbox-usuario');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+            actualizarSeleccionUsuarios();
+        }
+        
+        function actualizarSeleccionUsuarios() {
+            const checkboxes = document.querySelectorAll('.checkbox-usuario:checked');
+            const total = document.querySelectorAll('.checkbox-usuario').length;
+            const seleccionados = checkboxes.length;
+            
+            document.getElementById('contadorSeleccionUsuarios').textContent = seleccionados;
+            
+            // Actualizar estado del checkbox "seleccionar todos"
+            const selectAll = document.getElementById('selectAllUsuarios');
+            if (seleccionados === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (seleccionados === total) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.indeterminate = true;
+            }
+            
+            // Mostrar/ocultar barra de acciones
+            const barra = document.getElementById('barraAccionesMasivasUsuarios');
+            if (seleccionados > 0) {
+                barra.style.display = 'block';
+            } else {
+                barra.style.display = 'none';
+            }
+        }
+        
+        function ocultarBarraAccionesUsuarios() {
+            document.getElementById('barraAccionesMasivasUsuarios').style.display = 'none';
+            document.getElementById('contadorSeleccionUsuarios').textContent = '0';
+        }
+        
+        function deseleccionarTodosUsuarios() {
+            document.getElementById('selectAllUsuarios').checked = false;
+            document.querySelectorAll('.checkbox-usuario').forEach(cb => cb.checked = false);
+            ocultarBarraAccionesUsuarios();
+        }
+        
+        async function eliminarUsuariosSeleccionados() {
+            const checkboxes = document.querySelectorAll('.checkbox-usuario:checked');
+            const idsSeleccionados = Array.from(checkboxes).map(cb => cb.dataset.userid);
+            const nombresSeleccionados = Array.from(checkboxes).map(cb => cb.dataset.username);
+            
+            if (idsSeleccionados.length === 0) {
+                mostrarNotificacion('No hay usuarios seleccionados', 'warning');
+                return;
+            }
+            
+            // Mostrar confirmación con lista de nombres
+            let listaUsuarios = nombresSeleccionados.slice(0, 5).map(n => `• ${n}`).join('<br>');
+            if (nombresSeleccionados.length > 5) {
+                listaUsuarios += `<br>... y ${nombresSeleccionados.length - 5} más`;
+            }
+            
+            const confirmar = await mostrarConfirmacion(
+                `¿Está seguro de eliminar <strong>${idsSeleccionados.length}</strong> usuario(s)?<br><br>
+                <div style="max-height: 150px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; font-size: 0.9em;">
+                    ${listaUsuarios}
+                </div><br>
+                <strong style="color:#e74c3c">⚠️ Esta acción NO se puede deshacer.</strong>`,
+                '🗑️ Eliminar Usuarios Seleccionados',
+                { tipo: 'warning', btnConfirmar: 'Eliminar Todos', peligroso: true }
+            );
+            
+            if (!confirmar) return;
+            
+            try {
+                let eliminados = 0;
+                let errores = 0;
+                
+                for (const userId of idsSeleccionados) {
+                    const { error } = await supabase
+                        .from('users')
+                        .delete()
+                        .eq('id', userId);
+                    
+                    if (error) {
+                        console.error(`Error eliminando usuario ${userId}:`, error);
+                        errores++;
+                    } else {
+                        eliminados++;
+                    }
+                }
+                
+                if (errores > 0) {
+                    mostrarNotificacion(`Se eliminaron ${eliminados} usuarios. ${errores} fallaron.`, 'warning');
+                } else {
+                    mostrarNotificacion(`✓ ${eliminados} usuario(s) eliminado(s) correctamente`, 'success');
+                }
+                
+                cargarUsuariosAdmin();
+            } catch (error) {
+                console.error('Error eliminando usuarios:', error);
+                mostrarNotificacion('Error al eliminar usuarios', 'error');
+            }
         }
         
         function filtrarUsuariosAdmin() {
@@ -13662,8 +13821,12 @@
             const tbody = document.getElementById('tbodyEstudiantesAdmin');
             if (!tbody) return;
             
+            // Resetear selecciones al re-renderizar
+            document.getElementById('selectAllEstudiantes').checked = false;
+            ocultarBarraAccionesEstudiantes();
+            
             if (!estudiantes || estudiantes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-user-graduate"></i><p>No hay estudiantes registrados</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><i class="fas fa-user-graduate"></i><p>No hay estudiantes registrados</p></td></tr>';
                 return;
             }
             
@@ -13703,6 +13866,9 @@
                 
                 return `
                 <tr>
+                    <td style="width: 40px; text-align: center;">
+                        <input type="checkbox" class="checkbox-estudiante" data-estudianteid="${est.id}" data-estudiantenombre="${est.nombre_completo || 'Sin nombre'}" data-grado="${est.grado}" data-seccion="${est.seccion}" onchange="actualizarSeleccionEstudiantes()">
+                    </td>
                     <td>${est.nombre_completo || 'Sin nombre'}</td>
                     <td>${est.dni || 'Sin DNI'}</td>
                     <td>${est.grado || '-'}°</td>
@@ -13738,6 +13904,140 @@
                     </td>
                 </tr>
             `}).join('');
+        }
+        
+        // === FUNCIONES DE SELECCIÓN MÚLTIPLE PARA ESTUDIANTES ===
+        function toggleSelectAllEstudiantes(checkbox) {
+            const checkboxes = document.querySelectorAll('.checkbox-estudiante');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+            actualizarSeleccionEstudiantes();
+        }
+        
+        function actualizarSeleccionEstudiantes() {
+            const checkboxes = document.querySelectorAll('.checkbox-estudiante:checked');
+            const total = document.querySelectorAll('.checkbox-estudiante').length;
+            const seleccionados = checkboxes.length;
+            
+            document.getElementById('contadorSeleccionEstudiantes').textContent = seleccionados;
+            
+            // Actualizar estado del checkbox "seleccionar todos"
+            const selectAll = document.getElementById('selectAllEstudiantes');
+            if (seleccionados === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (seleccionados === total) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.indeterminate = true;
+            }
+            
+            // Mostrar/ocultar barra de acciones
+            const barra = document.getElementById('barraAccionesMasivasEstudiantes');
+            if (seleccionados > 0) {
+                barra.style.display = 'block';
+            } else {
+                barra.style.display = 'none';
+            }
+        }
+        
+        function ocultarBarraAccionesEstudiantes() {
+            document.getElementById('barraAccionesMasivasEstudiantes').style.display = 'none';
+            document.getElementById('contadorSeleccionEstudiantes').textContent = '0';
+        }
+        
+        function deseleccionarTodosEstudiantes() {
+            document.getElementById('selectAllEstudiantes').checked = false;
+            document.querySelectorAll('.checkbox-estudiante').forEach(cb => cb.checked = false);
+            ocultarBarraAccionesEstudiantes();
+        }
+        
+        function seleccionarTodosFiltrados() {
+            // Selecciona todos los estudiantes visibles actualmente (después del filtro)
+            const checkboxes = document.querySelectorAll('.checkbox-estudiante');
+            if (checkboxes.length === 0) {
+                mostrarNotificacion('No hay estudiantes para seleccionar. Aplique un filtro primero.', 'warning');
+                return;
+            }
+            
+            checkboxes.forEach(cb => cb.checked = true);
+            document.getElementById('selectAllEstudiantes').checked = true;
+            actualizarSeleccionEstudiantes();
+            
+            const grado = document.getElementById('filtroEstudianteGrado')?.value;
+            const seccion = document.getElementById('filtroEstudianteSeccion')?.value;
+            
+            let mensaje = `✓ ${checkboxes.length} estudiantes seleccionados`;
+            if (grado || seccion) {
+                mensaje += ` (${grado ? grado + '° Grado' : ''}${grado && seccion ? ' ' : ''}${seccion ? 'Sección ' + seccion : ''})`;
+            }
+            mostrarNotificacion(mensaje, 'info');
+        }
+        
+        async function eliminarEstudiantesSeleccionados() {
+            const checkboxes = document.querySelectorAll('.checkbox-estudiante:checked');
+            const estudiantesSeleccionados = Array.from(checkboxes).map(cb => ({
+                id: cb.dataset.estudianteid,
+                nombre: cb.dataset.estudiantenombre,
+                grado: cb.dataset.grado,
+                seccion: cb.dataset.seccion
+            }));
+            
+            if (estudiantesSeleccionados.length === 0) {
+                mostrarNotificacion('No hay estudiantes seleccionados', 'warning');
+                return;
+            }
+            
+            // Mostrar confirmación con lista de nombres
+            let listaEstudiantes = estudiantesSeleccionados.slice(0, 5).map(e => `• ${e.nombre} (${e.grado}° ${e.seccion})`).join('<br>');
+            if (estudiantesSeleccionados.length > 5) {
+                listaEstudiantes += `<br>... y ${estudiantesSeleccionados.length - 5} más`;
+            }
+            
+            const confirmar = await mostrarConfirmacion(
+                `¿Está seguro de eliminar <strong>${estudiantesSeleccionados.length}</strong> estudiante(s)?<br><br>
+                <div style="max-height: 150px; overflow-y: auto; text-align: left; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; font-size: 0.9em;">
+                    ${listaEstudiantes}
+                </div><br>
+                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 5px; color: #856404;">
+                    <i class="fas fa-info-circle"></i> <strong>Nota:</strong> Los apoderados que tengan otros hijos en el sistema NO serán eliminados.
+                </div><br>
+                <strong style="color:#e74c3c">⚠️ Esta acción NO se puede deshacer.</strong>`,
+                '🗑️ Eliminar Estudiantes Seleccionados',
+                { tipo: 'warning', btnConfirmar: 'Eliminar Todos', peligroso: true }
+            );
+            
+            if (!confirmar) return;
+            
+            try {
+                let eliminados = 0;
+                let errores = 0;
+                
+                for (const estudiante of estudiantesSeleccionados) {
+                    const { error } = await supabase
+                        .from('students')
+                        .delete()
+                        .eq('id', estudiante.id);
+                    
+                    if (error) {
+                        console.error(`Error eliminando estudiante ${estudiante.nombre}:`, error);
+                        errores++;
+                    } else {
+                        eliminados++;
+                    }
+                }
+                
+                if (errores > 0) {
+                    mostrarNotificacion(`Se eliminaron ${eliminados} estudiantes. ${errores} fallaron.`, 'warning');
+                } else {
+                    mostrarNotificacion(`✓ ${eliminados} estudiante(s) eliminado(s) correctamente`, 'success');
+                }
+                
+                cargarEstudiantesAdmin();
+            } catch (error) {
+                console.error('Error eliminando estudiantes:', error);
+                mostrarNotificacion('Error al eliminar estudiantes', 'error');
+            }
         }
         
         function filtrarEstudiantesAdmin() {
