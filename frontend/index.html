@@ -10375,22 +10375,37 @@
         }
         
         async function toggleActivoUsuario(userId, nuevoEstado) {
+            // Obtener información actual del usuario
+            const usuario = usuariosAdmin.find(u => u.id === userId);
+            
+            let mensaje = '';
+            if (nuevoEstado) {
+                mensaje = `¿Activar este usuario en el sistema?<br><br>`;
+                if (!usuario?.activado) {
+                    mensaje += `<small style="color: #856404;"><i class="fas fa-info-circle"></i> El usuario aún no ha completado la activación de su cuenta (sin contraseña).</small>`;
+                }
+            } else {
+                mensaje = `¿Desactivar este usuario?<br><br><small style="color: #e74c3c;">El usuario no podrá iniciar sesión mientras esté desactivado.</small>`;
+            }
+            
             const confirmar = await mostrarConfirmacion(
-                `¿Confirmar ${nuevoEstado ? 'activación' : 'desactivación'} del usuario?`,
+                mensaje,
                 nuevoEstado ? 'Activar Usuario' : 'Desactivar Usuario',
                 { tipo: nuevoEstado ? 'success' : 'warning', btnConfirmar: nuevoEstado ? 'Activar' : 'Desactivar' }
             );
             if (!confirmar) return;
             
             try {
+                // Solo actualizar 'activo' (estado en el sistema)
+                // NO tocar 'activado' (si ha completado el proceso de crear contraseña)
                 const { error } = await supabase
                     .from('users')
-                    .update({ activo: nuevoEstado, activado: nuevoEstado })
+                    .update({ activo: nuevoEstado })
                     .eq('id', userId);
                 
                 if (error) throw error;
                 
-                mostrarNotificacion(`Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`, 'success');
+                mostrarNotificacion(`Usuario ${nuevoEstado ? 'activado' : 'desactivado'} en el sistema`, 'success');
                 cargarUsuariosAdmin();
             } catch (error) {
                 console.error('Error:', error);
@@ -10524,27 +10539,28 @@
                             <button class="btn-close" onclick="document.getElementById('modalCrearUsuario').remove()">&times;</button>
                         </div>
                         <div class="modal-body">
+                            <div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #1976d2;">
+                                <small style="color: #1565c0;">
+                                    <i class="fas fa-info-circle"></i> 
+                                    El usuario deberá ir a "Activar mi cuenta" para crear su contraseña y completar el registro.
+                                </small>
+                            </div>
                             <form id="formCrearUsuario">
                                 <div class="form-group">
                                     <label>Nombre Completo *</label>
-                                    <input type="text" class="form-control" id="newUserNombre" required>
+                                    <input type="text" class="form-control" id="newUserNombre" required placeholder="Ej: JUAN CARLOS PÉREZ LÓPEZ">
                                 </div>
                                 <div class="form-group">
                                     <label>Email *</label>
-                                    <input type="email" class="form-control" id="newUserEmail" required>
+                                    <input type="email" class="form-control" id="newUserEmail" required placeholder="correo@ejemplo.com">
                                 </div>
                                 <div class="form-group">
-                                    <label>Contraseña *</label>
-                                    <input type="password" class="form-control" id="newUserPassword" minlength="6" required>
-                                    <small style="color: #666;">Mínimo 6 caracteres</small>
-                                </div>
-                                <div class="form-group">
-                                    <label>DNI</label>
-                                    <input type="text" class="form-control" id="newUserDni" maxlength="8">
+                                    <label>DNI *</label>
+                                    <input type="text" class="form-control" id="newUserDni" maxlength="8" required placeholder="12345678">
                                 </div>
                                 <div class="form-group">
                                     <label>Teléfono</label>
-                                    <input type="text" class="form-control" id="newUserTelefono">
+                                    <input type="text" class="form-control" id="newUserTelefono" placeholder="987654321">
                                 </div>
                                 <div class="form-group">
                                     <label>Rol *</label>
@@ -10553,7 +10569,7 @@
                             </form>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn btn-primary" onclick="guardarNuevoUsuario()"><i class="fas fa-save"></i> Crear Usuario</button>
+                            <button class="btn btn-primary" onclick="guardarNuevoUsuario()"><i class="fas fa-user-plus"></i> Registrar en Sistema</button>
                             <button class="btn btn-secondary" onclick="document.getElementById('modalCrearUsuario').remove()">Cancelar</button>
                         </div>
                     </div>
@@ -10563,29 +10579,52 @@
         }
         
         async function guardarNuevoUsuario() {
-            const email = document.getElementById('newUserEmail').value;
-            const password = document.getElementById('newUserPassword').value;
-            const nombre = document.getElementById('newUserNombre').value;
-            const dni = document.getElementById('newUserDni').value;
-            const telefono = document.getElementById('newUserTelefono').value;
+            const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+            const nombre = document.getElementById('newUserNombre').value.trim().toUpperCase();
+            const dni = document.getElementById('newUserDni').value.trim();
+            const telefono = document.getElementById('newUserTelefono').value.trim();
             const role = document.getElementById('newUserRol').value;
             
-            if (!email || !password || !nombre || !role) {
+            if (!email || !nombre || !dni || !role) {
                 mostrarNotificacion('Por favor complete los campos obligatorios', 'warning');
                 return;
             }
             
+            if (dni.length !== 8 || !/^\d{8}$/.test(dni)) {
+                mostrarNotificacion('El DNI debe tener exactamente 8 dígitos', 'warning');
+                return;
+            }
+            
             try {
-                // Crear usuario en la tabla users (sin Auth porque requiere Admin API)
+                // Verificar si el email o DNI ya existen
+                const { data: existente } = await supabase
+                    .from('users')
+                    .select('id, email, dni')
+                    .or(`email.eq.${email},dni.eq.${dni}`)
+                    .maybeSingle();
+                
+                if (existente) {
+                    if (existente.email === email) {
+                        mostrarNotificacion('Ya existe un usuario con ese email', 'error');
+                    } else {
+                        mostrarNotificacion('Ya existe un usuario con ese DNI', 'error');
+                    }
+                    return;
+                }
+                
+                // Crear usuario en la tabla users
+                // activo: true = está en el sistema
+                // activado: false = aún no ha creado su contraseña
                 const { data, error } = await supabase
                     .from('users')
                     .insert([{
                         email: email,
                         nombre_completo: nombre,
                         dni: dni,
-                        telefono: telefono,
+                        telefono: telefono || null,
                         role: role,
                         activo: true,
+                        activado: false,
                         created_at: new Date().toISOString()
                     }])
                     .select();
@@ -10593,8 +10632,12 @@
                 if (error) throw error;
                 
                 document.getElementById('modalCrearUsuario').remove();
-                mostrarNotificacion('Usuario creado correctamente. El usuario deberá registrarse con este email.', 'success');
+                mostrarNotificacion(
+                    `✅ Usuario registrado en el sistema. Debe ir a "Activar mi cuenta" para crear su contraseña.`,
+                    'success'
+                );
                 cargarUsuariosAdmin();
+                cargarDashboardAdmin();
             } catch (error) {
                 console.error('Error:', error);
                 mostrarNotificacion('Error al crear usuario: ' + error.message, 'error');
