@@ -5360,7 +5360,12 @@
                 // Paso 2: Verificar que la cuenta esté activada
                 if (!userData.activado) {
                     console.log('⚠️ Cuenta no activada');
-                    showLoginMessage('Tu cuenta aún no ha sido activada', 'info');
+                    showLoginMessage(
+                        `<strong><i class="fas fa-exclamation-triangle"></i> Cuenta no activada</strong><br>
+                        Tu cuenta existe en el sistema pero aún no has completado la activación.<br>
+                        <small style="color: #856404;">Debes completar los 3 pasos de activación para poder iniciar sesión.</small>`,
+                        'warning'
+                    );
                     document.getElementById('activarCuentaLink').style.display = 'block';
                     return;
                 }
@@ -8018,18 +8023,21 @@
                 }
                 
                 if (!data) {
-                    // No encontrado
+                    // No encontrado - El usuario NO está en el sistema
                     const criterio = dni ? `DNI <strong>${dni}</strong>` : `nombre <strong>${nombreCompleto}</strong>`;
                     showVerificarMessage(
-                        `<strong><i class="fas fa-times-circle"></i> Cuenta no encontrada</strong><br>
-                        No existe una cuenta con ${criterio} en nuestro sistema.<br>
-                        <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
-                            <i class="fas fa-info-circle" style="color: #856404;"></i>
-                            <span style="color: #856404;">
-                                ¿Tu cuenta no está registrada? 
-                                <a href="#" onclick="backToStep1bAndRequestForm(); return false;" style="color: var(--color-ata-verde); font-weight: bold; text-decoration: underline;">Solicita tu registro aquí</a>
-                            </span>
-                        </div>`,
+                        `<strong><i class="fas fa-times-circle"></i> No estás registrado en el sistema</strong><br>
+                        No encontramos una cuenta con ${criterio}.<br><br>
+                        <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                            <strong style="color: #856404;"><i class="fas fa-info-circle"></i> ¿Qué hacer?</strong><br>
+                            <p style="color: #856404; margin: 10px 0 0 0; font-size: 13px;">
+                                Si eres docente, tutor, auxiliar o padre de familia de la I.E. 80002 Antonio Torres Araujo, 
+                                debes solicitar tu registro al administrador.
+                            </p>
+                        </div>
+                        <button onclick="backToStep1bAndRequestForm()" class="btn" style="width: 100%; margin-top: 15px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 12px; border-radius: 8px; font-weight: 600;">
+                            <i class="fas fa-user-plus"></i> Solicitar Registro al Administrador
+                        </button>`,
                         'error'
                     );
                     return;
@@ -8082,14 +8090,38 @@
                 }
                 
                 // Si falta DNI, Email o Contraseña → Proceso progresivo
-                showVerificarMessage(
-                    `<strong><i class="fas fa-user-check"></i> Cuenta encontrada en el sistema</strong><br>
-                    Completa el registro de tus datos para activar tu cuenta.<br><br>
-                    <button onclick="mostrarCrearContrasena()" class="btn btn-success" style="width: 100%; margin-top: 10px;">
-                        <i class="fas fa-key"></i> Completar Registro y Crear Contraseña
-                    </button>`,
-                    'success'
-                );
+                // Verificar si la cuenta está activa en el sistema pero aún no activada
+                const estaEnSistema = data.activo !== false; // activo = true o null significa que está en el sistema
+                const cuentaActivada = data.activado === true;
+                
+                if (estaEnSistema && !cuentaActivada) {
+                    // Está en el sistema pero NO ha completado la activación
+                    showVerificarMessage(
+                        `<strong><i class="fas fa-user-check" style="color: #28a745;"></i> ¡Tu cuenta existe en el sistema!</strong><br><br>
+                        <div style="padding: 12px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 15px;">
+                            <strong style="color: #2e7d32;">Estado:</strong> <span style="color: #2e7d32;">Registrado en el sistema ✓</span><br>
+                            <strong style="color: #f57c00;">Falta:</strong> <span style="color: #f57c00;">Completar activación de cuenta</span>
+                        </div>
+                        <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
+                            Para poder iniciar sesión, necesitas completar los 3 pasos de activación 
+                            y crear tu contraseña personal.
+                        </p>
+                        <button onclick="mostrarCrearContrasena()" class="btn btn-success" style="width: 100%; padding: 14px; font-size: 15px;">
+                            <i class="fas fa-key"></i> Continuar con la Activación
+                        </button>`,
+                        'success'
+                    );
+                } else {
+                    // Caso genérico - faltan datos
+                    showVerificarMessage(
+                        `<strong><i class="fas fa-user-check"></i> Cuenta encontrada en el sistema</strong><br>
+                        Completa el registro de tus datos para activar tu cuenta.<br><br>
+                        <button onclick="mostrarCrearContrasena()" class="btn btn-success" style="width: 100%; margin-top: 10px;">
+                            <i class="fas fa-key"></i> Completar Registro y Crear Contraseña
+                        </button>`,
+                        'success'
+                    );
+                }
                 
                 // Guardar referencia para el proceso progresivo
                 window.cuentaVerificada = data;
@@ -8218,17 +8250,30 @@
                     updateData.telefono = window.cuentaVerificada.telefono;
                 }
                 
-                const { error: updateError } = await supabase
+                console.log('📝 Actualizando datos en BD:', updateData);
+                console.log('📝 ID del usuario:', window.cuentaVerificada.id);
+                
+                const { data: updateResult, error: updateError } = await supabase
                     .from('users')
                     .update(updateData)
-                    .eq('id', window.cuentaVerificada.id);
+                    .eq('id', window.cuentaVerificada.id)
+                    .select();
                 
                 if (updateError) {
+                    console.error('❌ Error actualizando BD:', updateError);
                     throw updateError;
+                }
+                
+                console.log('✅ BD actualizada exitosamente:', updateResult);
+                
+                // Verificar que se actualizó correctamente
+                if (!updateResult || updateResult.length === 0) {
+                    console.warn('⚠️ No se encontró el registro para actualizar');
                 }
                 
                 messageContainer.innerHTML = `
                     <strong><i class="fas fa-check-circle"></i> ¡Cuenta activada exitosamente!</strong><br>
+                    <small>Tu cuenta ha sido activada correctamente.</small><br>
                     Iniciando sesión automáticamente...
                 `;
                 messageContainer.className = 'form-message success show';
@@ -10606,7 +10651,12 @@
         
         async function aprobarSolicitud(solicitudId) {
             const confirmar = await mostrarConfirmacion(
-                '¿Aprobar esta solicitud y crear la cuenta del usuario?<br><br>El usuario podrá iniciar sesión inmediatamente.',
+                `<strong>¿Aprobar esta solicitud?</strong><br><br>
+                Al aprobar:<br>
+                • El usuario será registrado en el sistema<br>
+                • Podrá ver su cuenta en "Activar mi cuenta"<br>
+                • Deberá completar los 3 pasos de activación para iniciar sesión<br><br>
+                <small style="color: #666;">El usuario NO podrá iniciar sesión hasta que complete la activación.</small>`,
                 'Aprobar Solicitud',
                 { tipo: 'success', btnConfirmar: 'Aprobar' }
             );
@@ -10648,7 +10698,7 @@
                 
                 if (errorActualizar) throw errorActualizar;
                 
-                mostrarNotificacion('Solicitud aprobada - Cuenta creada correctamente', 'success');
+                mostrarNotificacion('✅ Solicitud aprobada - El usuario debe completar la activación de su cuenta para iniciar sesión', 'success');
                 cargarSolicitudesAdmin();
                 cargarDashboardAdmin(); // Actualizar dashboard
                 actualizarContadorSolicitudes(); // Actualizar badge y campanita
