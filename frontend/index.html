@@ -12703,11 +12703,7 @@
                     remitente_email: currentUser.email || '',
                     remitente_role: currentUser.role || 'usuario',
                     mensaje: `📩 Respuesta a: "${mensajeOriginal.respuesta_admin?.substring(0, 50)}..."\n\n${respuesta}`,
-                    leido: false,
-                    respuesta_admin: null,
-                    respuesta_vista: false,
-                    leido_notificado: false,
-                    mensaje_padre_id: mensajeOriginal.id // Referencia al mensaje original (para hilo)
+                    leido: false
                 };
                 
                 const { error } = await supabase
@@ -12716,11 +12712,11 @@
                 
                 if (error) throw error;
                 
-                mostrarNotificacion('Respuesta enviada al administrador', 'success');
+                mostrarNotificacion('✅ Respuesta enviada al administrador', 'success');
                 
             } catch (error) {
                 console.error('Error enviando respuesta:', error);
-                mostrarNotificacion('Error al enviar respuesta', 'error');
+                mostrarNotificacion('Error al enviar respuesta: ' + (error.message || 'Error desconocido'), 'error');
             }
         }
         
