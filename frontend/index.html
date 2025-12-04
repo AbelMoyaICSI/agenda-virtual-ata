@@ -4970,6 +4970,14 @@
                 // Mostrar modal de éxito
                 document.getElementById('modalLecturaConfirmada').style.display = 'flex';
                 
+                // IMPORTANTE: Actualizar el contador de notificaciones (campanita)
+                if (typeof notificacionesUsuario !== 'undefined' && incidenciaIdParaConfirmar) {
+                    notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== incidenciaIdParaConfirmar);
+                    if (typeof actualizarUINotificacionesUsuario === 'function') {
+                        actualizarUINotificacionesUsuario(notificacionesUsuario);
+                    }
+                }
+                
                 // Recargar datos del portal del padre para ver el cambio
                 if (currentUser && currentUser.role === 'padre') {
                     console.log('🔄 Recargando portal del padre...');
