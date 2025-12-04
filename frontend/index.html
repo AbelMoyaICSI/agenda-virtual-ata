@@ -10519,6 +10519,24 @@
                 let errores = 0;
                 
                 for (const userId of idsSeleccionados) {
+                    // Obtener datos del usuario para limpiar solicitudes
+                    const usuario = usuariosAdmin.find(u => u.id === userId);
+                    
+                    // 1. Eliminar solicitudes de registro asociadas
+                    if (usuario) {
+                        const conditions = [];
+                        if (usuario.email) conditions.push(`email.eq.${usuario.email}`);
+                        if (usuario.dni) conditions.push(`dni.eq.${usuario.dni}`);
+                        
+                        if (conditions.length > 0) {
+                            await supabase
+                                .from('solicitudes_registro')
+                                .delete()
+                                .or(conditions.join(','));
+                        }
+                    }
+                    
+                    // 2. Eliminar usuario (trigger elimina de auth.users)
                     const { error } = await supabase
                         .from('users')
                         .delete()
@@ -10605,15 +10623,33 @@
         }
         
         async function eliminarUsuario(userId) {
+            // Primero obtener los datos del usuario para eliminar sus solicitudes
+            const usuario = usuariosAdmin.find(u => u.id === userId);
+            
             const confirmar = await mostrarConfirmacion(
-                '¿Está seguro de eliminar este usuario?<br><br><strong style="color:#e74c3c">Esta acción NO se puede deshacer.</strong><br><small>Se eliminará completamente del sistema (datos y acceso).</small>',
+                '¿Está seguro de eliminar este usuario?<br><br><strong style="color:#e74c3c">Esta acción NO se puede deshacer.</strong><br><small>Se eliminará completamente del sistema (datos, acceso y solicitudes de registro).</small>',
                 '⚠️ Eliminar Usuario',
                 { tipo: 'warning', btnConfirmar: 'Eliminar', peligroso: true }
             );
             if (!confirmar) return;
             
             try {
-                // Eliminar de la tabla users
+                // 1. Eliminar solicitudes de registro asociadas (por email o dni)
+                if (usuario) {
+                    const conditions = [];
+                    if (usuario.email) conditions.push(`email.eq.${usuario.email}`);
+                    if (usuario.dni) conditions.push(`dni.eq.${usuario.dni}`);
+                    
+                    if (conditions.length > 0) {
+                        await supabase
+                            .from('solicitudes_registro')
+                            .delete()
+                            .or(conditions.join(','));
+                        console.log('Solicitudes de registro eliminadas para:', usuario.email || usuario.dni);
+                    }
+                }
+                
+                // 2. Eliminar de la tabla users
                 // El trigger en la BD automáticamente elimina de auth.users
                 const { error } = await supabase
                     .from('users')
@@ -10924,16 +10960,15 @@
                 
                 if (errorCrear) throw errorCrear;
                 
-                // Actualizar el estado de la solicitud a 'aprobado'
-                const { error: errorActualizar } = await supabase
+                // ELIMINAR la solicitud (ya no se necesita, el usuario está creado)
+                const { error: errorEliminar } = await supabase
                     .from('solicitudes_registro')
-                    .update({ 
-                        estado: 'aprobado',
-                        revisado_at: new Date().toISOString()
-                    })
+                    .delete()
                     .eq('id', solicitudId);
                 
-                if (errorActualizar) throw errorActualizar;
+                if (errorEliminar) {
+                    console.warn('No se pudo eliminar la solicitud:', errorEliminar);
+                }
                 
                 mostrarNotificacion('✅ Solicitud aprobada - El usuario debe completar la activación de su cuenta para iniciar sesión', 'success');
                 cargarSolicitudesAdmin();
@@ -10947,24 +10982,22 @@
         
         async function rechazarSolicitud(solicitudId) {
             const confirmar = await mostrarConfirmacion(
-                '¿Rechazar esta solicitud?<br><br>El solicitante deberá enviar una nueva solicitud si desea registrarse.',
+                '¿Rechazar esta solicitud?<br><br>La solicitud será eliminada y el usuario podrá enviar una nueva si lo desea.',
                 '⚠️ Rechazar Solicitud',
                 { tipo: 'warning', btnConfirmar: 'Rechazar', peligroso: true }
             );
             if (!confirmar) return;
             
             try {
+                // Eliminar la solicitud completamente (para que pueda volver a intentar)
                 const { error } = await supabase
                     .from('solicitudes_registro')
-                    .update({ 
-                        estado: 'rechazado',
-                        revisado_at: new Date().toISOString()
-                    })
+                    .delete()
                     .eq('id', solicitudId);
                 
                 if (error) throw error;
                 
-                mostrarNotificacion('Solicitud rechazada', 'success');
+                mostrarNotificacion('Solicitud rechazada y eliminada', 'success');
                 cargarSolicitudesAdmin();
                 cargarDashboardAdmin();
                 actualizarContadorSolicitudes(); // Actualizar badge
