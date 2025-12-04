@@ -3,7 +3,7 @@
 // Maneja notificaciones push y caché para PWA
 // ============================================================================
 
-const CACHE_NAME = 'agenda-ata-v1';
+const CACHE_NAME = 'agenda-ata-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Archivos a cachear para funcionamiento offline básico

@@ -12228,14 +12228,24 @@
                     .on('postgres_changes',
                         { event: 'UPDATE', schema: 'public', table: 'incidencias' },
                         async (payload) => {
+                            debugLog('📋 UPDATE en incidencias detectado', 'info');
                             const inc = payload.new;
                             const oldInc = payload.old || {};
                             
+                            // Comparar IDs como strings para evitar problemas de tipo
+                            const docId = String(inc.docente_id || '');
+                            const regId = String(inc.registrado_por || '');
+                            const myId = String(currentUser.id || '');
+                            
+                            debugLog(`IDs: docente=${docId}, registrado=${regId}, yo=${myId}`, 'info');
+                            
                             // Verificar si es una incidencia registrada por este docente
-                            if (inc.docente_id === currentUser.id || inc.registrado_por === currentUser.id) {
+                            const esMinIncidencia = docId === myId || regId === myId;
+                            
+                            if (esMinIncidencia) {
                                 // Padre confirmó/revisó la incidencia
                                 if (inc.revisado_por_padre && !oldInc.revisado_por_padre) {
-                                    debugLog('✅ PADRE CONFIRMÓ INCIDENCIA!', 'success');
+                                    debugLog('✅ PADRE CONFIRMÓ MI INCIDENCIA!', 'success');
                                     
                                     // Obtener nombre del estudiante para el mensaje
                                     let nombreEstudiante = 'un estudiante';
@@ -12257,11 +12267,10 @@
                                     await manejarNotificacion(
                                         '✅ Padre confirmó lectura',
                                         mensaje,
-                                        () => {
-                                            cargarNotificacionesUsuario();
+                                        async () => {
                                             // Actualizar historial si está visible
                                             if (typeof renderizarHistorial === 'function') {
-                                                renderizarHistorial();
+                                                await renderizarHistorial();
                                             }
                                         }
                                     );
@@ -12271,6 +12280,7 @@
                     )
                     .subscribe((status, err) => {
                         debugLog(`Canal confirmaciones: ${status}`, status === 'SUBSCRIBED' ? 'success' : 'warning');
+                        if (err) debugLog(`Error canal confirmaciones: ${err}`, 'error');
                     });
                 canalesActivos.push(canalConfirmaciones);
             }
