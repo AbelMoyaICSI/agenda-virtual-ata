@@ -11756,18 +11756,22 @@
             });
         }
         
-        // Mostrar notificación visual en pantalla (toast)
-        function mostrarNotificacionVisual(titulo, mensaje) {
+        // Mostrar notificación visual en pantalla (toast) - Clickeable para ver detalles
+        function mostrarNotificacionVisual(titulo, mensaje, datosExtra = null) {
             // Crear toast notification
             const toast = document.createElement('div');
             toast.className = 'notification-toast';
             toast.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-bell" style="font-size: 24px; color: var(--color-ata-dorado);"></i>
-                    <div>
+                    <div style="flex: 1;">
                         <strong style="display: block;">${titulo}</strong>
                         <small>${mensaje}</small>
                     </div>
+                    <i class="fas fa-chevron-right" style="color: #ccc; font-size: 14px;"></i>
+                </div>
+                <div style="font-size: 10px; color: var(--color-ata-verde); margin-top: 8px; text-align: center;">
+                    <i class="fas fa-hand-pointer"></i> Clic para ver detalles
                 </div>
             `;
             toast.style.cssText = `
@@ -11782,7 +11786,19 @@
                 z-index: 10000;
                 animation: slideIn 0.3s ease;
                 cursor: pointer;
+                max-width: 350px;
+                transition: transform 0.2s, box-shadow 0.2s;
             `;
+            
+            // Efecto hover
+            toast.onmouseenter = () => {
+                toast.style.transform = 'scale(1.02)';
+                toast.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+            };
+            toast.onmouseleave = () => {
+                toast.style.transform = 'scale(1)';
+                toast.style.boxShadow = '0 5px 20px rgba(0,0,0,0.2)';
+            };
             
             // Agregar estilos de animación si no existen
             if (!document.getElementById('toast-styles')) {
@@ -11803,19 +11819,34 @@
             
             document.body.appendChild(toast);
             
-            // Cerrar al hacer clic
+            // Al hacer clic: abrir dropdown de notificaciones
             toast.onclick = () => {
                 toast.style.animation = 'slideOut 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
+                
+                // Abrir dropdown de notificaciones (campanita)
+                const notificationDropdown = document.getElementById('notificationDropdown');
+                const messageDropdown = document.getElementById('messageDropdown');
+                
+                // Cerrar dropdown de mensajes si está abierto
+                if (messageDropdown) messageDropdown.classList.remove('show');
+                
+                // Abrir dropdown de notificaciones
+                if (notificationDropdown) {
+                    notificationDropdown.classList.add('show');
+                    // Scroll hasta la campanita
+                    const bell = document.getElementById('notificationBell');
+                    if (bell) bell.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             };
             
-            // Auto-cerrar después de 5 segundos
+            // Auto-cerrar después de 8 segundos (más tiempo para que lean)
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.style.animation = 'slideOut 0.3s ease';
                     setTimeout(() => toast.remove(), 300);
                 }
-            }, 5000);
+            }, 8000);
         }
         
         // ===== ACTUALIZAR TÍTULO DE LA PÁGINA CON CONTADOR =====
@@ -12469,23 +12500,58 @@
             
             try {
                 if (tipo === 'incidencia') {
-                    await supabase
-                        .from('incidencias')
-                        .update({ vista_por_padre: true })
-                        .eq('id', id);
+                    // Para incidencias, preguntar si quiere agregar comentario
+                    const result = await Swal.fire({
+                        title: '¿Confirmar lectura?',
+                        html: `
+                            <p style="margin-bottom: 15px;">Al confirmar, el docente/tutor será notificado.</p>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">💬 Comentario (opcional):</label>
+                            <textarea id="comentarioRapido" class="swal2-textarea" placeholder="Puedes agregar un comentario..." style="width: 100%; min-height: 60px;"></textarea>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-check"></i> Confirmar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: 'var(--color-ata-verde)'
+                    });
+                    
+                    if (result.isConfirmed) {
+                        const comentario = document.getElementById('comentarioRapido')?.value || '';
+                        
+                        await supabase
+                            .from('incidencias')
+                            .update({ 
+                                vista_por_padre: true,
+                                revisado_por_padre: true,
+                                fecha_revision_padre: new Date().toISOString(),
+                                comentario_padre: comentario || null
+                            })
+                            .eq('id', id);
+                        
+                        // Remover de la lista local
+                        notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== id);
+                        actualizarUINotificacionesUsuario(notificacionesUsuario);
+                        mostrarNotificacion('✅ Lectura confirmada', 'success');
+                        
+                        // Recargar portal si es padre
+                        if (typeof cargarPortalPadre === 'function') {
+                            await cargarPortalPadre();
+                        }
+                    }
                 } else if (tipo === 'respuesta_soporte' || tipo === 'mensaje_leido') {
                     await supabase
                         .from('mensajes_soporte')
                         .update({ respuesta_vista: true, leido_notificado: true })
                         .eq('id', id);
+                    
+                    // Remover de la lista local
+                    notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== id);
+                    actualizarUINotificacionesUsuario(notificacionesUsuario);
+                    mostrarNotificacion('Notificación marcada como leída', 'success');
                 }
-                
-                // Remover de la lista local
-                notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== id);
-                actualizarUINotificacionesUsuario(notificacionesUsuario);
-                mostrarNotificacion('Notificación marcada como leída', 'success');
             } catch (error) {
                 console.error('Error:', error);
+                mostrarNotificacion('Error al marcar notificación', 'error');
             }
         }
         
@@ -12733,13 +12799,20 @@
             }
         }
         
-        // Mostrar detalle de incidencia para padre
+        // Mostrar detalle de incidencia para padre (desde notificaciones)
         function mostrarDetalleIncidenciaPadre(incidencia) {
             const tipoTexto = {
                 'merito': '⭐ Mérito',
-                'leve': 'Falta Leve',
-                'grave': 'Falta Grave',
-                'muy_grave': 'Falta Muy Grave'
+                'leve': '⚠️ Falta Leve',
+                'grave': '🔶 Falta Grave',
+                'muy_grave': '🔴 Falta Muy Grave'
+            };
+            
+            const tipoColor = {
+                'merito': 'var(--color-ata-dorado)',
+                'leve': '#28a745',
+                'grave': '#f39c12',
+                'muy_grave': '#dc3545'
             };
             
             Swal.fire({
@@ -12747,41 +12820,79 @@
                 html: `
                     <div style="text-align: left;">
                         <div style="margin-bottom: 15px;">
-                            <strong>Estudiante:</strong> ${incidencia.estudiante?.nombre_completo || 'N/A'}
+                            <strong>👤 Estudiante:</strong> ${incidencia.estudiante?.nombre_completo || 'N/A'}
                         </div>
                         <div style="margin-bottom: 15px;">
-                            <strong>Fecha:</strong> ${new Date(incidencia.fecha || incidencia.created_at).toLocaleDateString('es-PE')}
+                            <strong>📅 Fecha:</strong> ${new Date(incidencia.fecha || incidencia.created_at).toLocaleDateString('es-PE')}
                         </div>
                         <div style="margin-bottom: 15px;">
-                            <strong>Descripción:</strong>
+                            <strong>📋 Descripción:</strong>
                             <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 5px;">
                                 ${incidencia.descripcion || 'Sin descripción'}
                             </div>
                         </div>
                         ${incidencia.accion_tomada ? `
                             <div style="margin-bottom: 15px;">
-                                <strong>Acción tomada:</strong>
+                                <strong>✅ Acción tomada:</strong>
                                 <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-top: 5px;">
                                     ${incidencia.accion_tomada}
                                 </div>
                             </div>
                         ` : ''}
+                        
+                        <!-- Sección de confirmación con comentario -->
+                        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid var(--color-ata-verde);">
+                            <strong style="color: var(--color-ata-verde);"><i class="fas fa-comment-dots"></i> Comentario u opinión (opcional):</strong>
+                            <textarea id="comentarioPadreNotif" class="swal2-textarea" placeholder="Puedes agregar un comentario sobre esta incidencia..." style="width: 100%; margin: 10px 0 0 0; min-height: 70px; resize: vertical; font-size: 14px;"></textarea>
+                            <small style="color: #666;">Al confirmar, el docente/tutor será notificado que has revisado esta información.</small>
+                        </div>
                     </div>
                 `,
-                width: 550,
-                showCancelButton: false,
-                confirmButtonText: 'Marcar como visto',
-                confirmButtonColor: 'var(--color-ata-verde)'
+                width: 600,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-check"></i> Confirmar Lectura',
+                cancelButtonText: '<i class="fas fa-times"></i> Cerrar',
+                confirmButtonColor: 'var(--color-ata-verde)',
+                cancelButtonColor: '#6c757d'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    // Marcar incidencia como vista por padre
-                    await supabase
-                        .from('incidencias')
-                        .update({ vista_por_padre: true })
-                        .eq('id', incidencia.id);
+                    const comentario = document.getElementById('comentarioPadreNotif')?.value || '';
                     
-                    cargarNotificacionesUsuario();
-                    mostrarNotificacion('Incidencia marcada como vista', 'success');
+                    try {
+                        // Actualizar incidencia como revisada por padre
+                        const { error } = await supabase
+                            .from('incidencias')
+                            .update({ 
+                                revisado_por_padre: true,
+                                vista_por_padre: true,
+                                fecha_revision_padre: new Date().toISOString(),
+                                comentario_padre: comentario || null
+                            })
+                            .eq('id', incidencia.id);
+                        
+                        if (error) throw error;
+                        
+                        // Remover de la lista local de notificaciones
+                        notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== incidencia.id);
+                        actualizarUINotificacionesUsuario(notificacionesUsuario);
+                        
+                        // Mostrar éxito
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Confirmado!',
+                            text: 'Tu confirmación ha sido registrada. El docente/tutor será notificado.',
+                            confirmButtonColor: 'var(--color-ata-verde)'
+                        });
+                        
+                        // Recargar portal del padre
+                        if (typeof cargarPortalPadre === 'function') {
+                            await cargarPortalPadre();
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error confirmando lectura:', error);
+                        mostrarNotificacion('Error al confirmar lectura', 'error');
+                    }
                 }
             });
         }
