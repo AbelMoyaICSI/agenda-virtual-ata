@@ -11558,11 +11558,39 @@
             
             try {
                 const registration = await navigator.serviceWorker.register('/sw.js', {
-                    scope: '/'
+                    scope: '/',
+                    updateViaCache: 'none' // Siempre verificar actualizaciones
                 });
                 
                 console.log('✅ Service Worker registrado:', registration.scope);
                 swRegistration = registration;
+                
+                // Forzar actualización del Service Worker
+                registration.update();
+                
+                // Detectar cuando hay un nuevo SW esperando
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    console.log('🔄 Nueva versión del Service Worker encontrada');
+                    
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // Hay una nueva versión lista
+                            console.log('✨ Nueva versión lista - activando automáticamente');
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+                
+                // Recargar cuando el nuevo SW tome control
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        console.log('🔄 Nuevo Service Worker activo - recargando...');
+                        window.location.reload();
+                    }
+                });
                 
                 // Escuchar mensajes del Service Worker (para reproducir DING)
                 navigator.serviceWorker.addEventListener('message', (event) => {
@@ -12308,19 +12336,30 @@
                 
                 // POLLING: Verificar confirmaciones de padres cada 15 segundos (respaldo si Realtime falla)
                 let ultimaVerificacion = new Date().toISOString();
+                let incidenciasYaNotificadas = new Set(); // Para evitar notificaciones duplicadas
+                
                 const intervalPolling = setInterval(async () => {
                     try {
+                        debugLog('🔄 Polling confirmaciones...', 'info');
+                        
+                        // Buscar por registrado_por O docente_id
                         const { data: confirmadas, error } = await supabase
                             .from('incidencias')
-                            .select('id, estudiante_id, comentario_padre, revisado_por_padre, fecha_revision_padre, estudiantes!inner(nombre_completo)')
-                            .eq('registrado_por', currentUser.id)
+                            .select('id, estudiante_id, comentario_padre, revisado_por_padre, fecha_revision_padre, docente_id, registrado_por, estudiantes!inner(nombre_completo)')
                             .eq('revisado_por_padre', true)
                             .gt('fecha_revision_padre', ultimaVerificacion)
+                            .or(`registrado_por.eq.${currentUser.id},docente_id.eq.${currentUser.id}`)
                             .order('fecha_revision_padre', { ascending: false })
                             .limit(5);
                         
+                        debugLog(`Polling encontró: ${confirmadas?.length || 0} confirmadas`, 'info');
+                        
                         if (!error && confirmadas && confirmadas.length > 0) {
                             for (const inc of confirmadas) {
+                                // Evitar notificar la misma incidencia más de una vez
+                                if (incidenciasYaNotificadas.has(inc.id)) continue;
+                                incidenciasYaNotificadas.add(inc.id);
+                                
                                 const nombreEstudiante = inc.estudiantes?.nombre_completo || 'un estudiante';
                                 let mensaje = `Incidencia de ${nombreEstudiante} ha sido revisada`;
                                 if (inc.comentario_padre) {

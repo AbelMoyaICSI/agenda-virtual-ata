@@ -3,7 +3,7 @@
 // Maneja notificaciones push y caché para PWA
 // ============================================================================
 
-const CACHE_NAME = 'agenda-ata-v2';
+const CACHE_NAME = 'agenda-ata-v3';
 const OFFLINE_URL = '/offline.html';
 
 // Archivos a cachear para funcionamiento offline básico
@@ -184,6 +184,14 @@ self.addEventListener('notificationclick', (event) => {
 // ===== CIERRE DE NOTIFICACIÓN =====
 self.addEventListener('notificationclose', (event) => {
   console.log('❌ Notificación cerrada:', event.notification.tag);
+});
+
+// ===== MENSAJE PARA SKIP WAITING =====
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('⚡ Recibido SKIP_WAITING - activando nuevo SW');
+    self.skipWaiting();
+  }
 });
 
 // ===== SINCRONIZACIÓN EN BACKGROUND (futuro) =====
