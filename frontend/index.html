@@ -13066,12 +13066,17 @@
                         .order('updated_at', { ascending: false })
                         .limit(10);
 
+                    console.log('🔔 Confirmaciones docente:', confirmaciones?.length || 0, confirmaciones);
+                    if (err4) console.error('Error confirmaciones:', err4);
+
                     if (!err4 && confirmaciones) {
                         confirmaciones.forEach(inc => {
                             // Solo mostrar las últimas 7 días (168 horas)
                             const fechaInc = new Date(inc.updated_at);
                             const ahora = new Date();
                             const diffHoras = (ahora - fechaInc) / (1000 * 60 * 60);
+
+                            console.log(`Incidencia ${inc.id}: ${diffHoras.toFixed(1)} horas atrás, dentro de 168h: ${diffHoras <= 168}`);
 
                             if (diffHoras <= 168) {
                                 notificaciones.push({
@@ -13087,6 +13092,7 @@
                             }
                         });
                     }
+                    console.log('🔔 Total notificaciones después de confirmaciones:', notificaciones.length);
                 }
 
                 // 4. Mensajes marcados como leídos (para todos)
