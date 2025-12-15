@@ -7670,6 +7670,122 @@
             }
         }
 
+        // =========================================================================
+        // FUNCIÓN PARA MOSTRAR MODAL DE CAMBIO DE CONTRASEÑA (RECUPERACIÓN)
+        // Se muestra cuando el usuario viene desde el enlace de recuperación
+        // =========================================================================
+        async function mostrarModalCambioPassword(email) {
+            console.log('📝 Mostrando modal de cambio de contraseña para:', email);
+
+            // Ocultar pantalla de login
+            document.getElementById('loginScreen').style.display = 'none';
+
+            const result = await Swal.fire({
+                title: '<i class="fas fa-key"></i> Restablecer Contraseña',
+                html: `
+                    <div style="text-align: left; padding: 10px 0;">
+                        <p style="margin-bottom: 15px; color: #666;">
+                            <strong>Cuenta:</strong> ${email}
+                        </p>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">
+                                Nueva Contraseña:
+                            </label>
+                            <input type="password" id="swal-password" class="swal2-input" 
+                                   placeholder="Mínimo 6 caracteres" 
+                                   style="width: 100%; margin: 0; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">
+                                Confirmar Contraseña:
+                            </label>
+                            <input type="password" id="swal-confirm-password" class="swal2-input" 
+                                   placeholder="Repite la contraseña" 
+                                   style="width: 100%; margin: 0; box-sizing: border-box;">
+                        </div>
+                    </div>
+                `,
+                icon: 'info',
+                showCancelButton: false,
+                confirmButtonColor: '#006B3F',
+                confirmButtonText: '<i class="fas fa-save"></i> Guardar Nueva Contraseña',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                preConfirm: () => {
+                    const password = document.getElementById('swal-password').value;
+                    const confirmPassword = document.getElementById('swal-confirm-password').value;
+
+                    if (!password || !confirmPassword) {
+                        Swal.showValidationMessage('Por favor completa ambos campos');
+                        return false;
+                    }
+
+                    if (password.length < 6) {
+                        Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+                        return false;
+                    }
+
+                    if (password !== confirmPassword) {
+                        Swal.showValidationMessage('Las contraseñas no coinciden');
+                        return false;
+                    }
+
+                    return { password };
+                }
+            });
+
+            if (result.isConfirmed && result.value) {
+                try {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Actualizando contraseña...',
+                        html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+                        showConfirmButton: false,
+                        allowOutsideClick: false
+                    });
+
+                    // Actualizar contraseña
+                    const { error } = await supabase.auth.updateUser({
+                        password: result.value.password
+                    });
+
+                    if (error) throw error;
+
+                    console.log('✅ Contraseña actualizada exitosamente');
+
+                    // Cerrar sesión de recuperación
+                    await supabase.auth.signOut();
+
+                    // Mostrar éxito
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '¡Contraseña Actualizada!',
+                        html: `
+                            <p>Tu contraseña ha sido cambiada exitosamente.</p>
+                            <p style="margin-top: 10px; color: #666;">
+                                <small>Ahora puedes iniciar sesión con tu nueva contraseña.</small>
+                            </p>
+                        `,
+                        confirmButtonColor: '#006B3F',
+                        confirmButtonText: 'Ir al Inicio de Sesión'
+                    });
+
+                    // Mostrar pantalla de login
+                    document.getElementById('loginScreen').style.display = 'flex';
+
+                } catch (err) {
+                    console.error('Error actualizando contraseña:', err);
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo actualizar la contraseña: ' + err.message,
+                        confirmButtonColor: '#006B3F'
+                    });
+                    document.getElementById('loginScreen').style.display = 'flex';
+                }
+            }
+        }
+
         // Función de logout
         async function logout() {
             try {
@@ -7757,6 +7873,45 @@
         async function checkExistingSession() {
             try {
                 console.log('🔍 Verificando sesión existente...');
+
+                // =========================================================================
+                // DETECTAR FLUJO DE RECUPERACIÓN DE CONTRASEÑA
+                // Cuando el usuario viene desde el enlace de email, la URL contiene tokens
+                // =========================================================================
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = hashParams.get('access_token');
+                const refreshToken = hashParams.get('refresh_token');
+                const type = hashParams.get('type');
+
+                if (type === 'recovery' && accessToken) {
+                    console.log('🔐 Detectado flujo de recuperación de contraseña');
+
+                    // Establecer la sesión con los tokens del enlace
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+
+                    if (error) {
+                        console.error('Error estableciendo sesión de recuperación:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Enlace expirado',
+                            text: 'El enlace de recuperación ha expirado o es inválido. Por favor solicita uno nuevo.',
+                            confirmButtonColor: '#006B3F'
+                        });
+                        // Limpiar hash de la URL
+                        window.history.replaceState(null, '', window.location.pathname);
+                        return false;
+                    }
+
+                    // Limpiar hash de la URL
+                    window.history.replaceState(null, '', window.location.pathname);
+
+                    // Mostrar modal para cambiar contraseña
+                    await mostrarModalCambioPassword(data.user.email);
+                    return true; // No continuar con el flujo normal
+                }
 
                 // PRIMERO: Intentar sesión de Supabase Auth
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
