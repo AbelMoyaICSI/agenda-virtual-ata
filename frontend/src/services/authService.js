@@ -35,10 +35,10 @@ export const login = async (email, password) => {
 
   } catch (error) {
     console.error('Error en login:', error);
-    return { 
-      user: null, 
-      session: null, 
-      error: error.message || 'Error al iniciar sesión' 
+    return {
+      user: null,
+      session: null,
+      error: error.message || 'Error al iniciar sesión'
     };
   }
 };
@@ -87,7 +87,7 @@ export const logout = async () => {
 export const checkSession = async () => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
-    
+
     if (error) throw error;
 
     if (session?.user) {
@@ -103,10 +103,10 @@ export const checkSession = async () => {
 
   } catch (error) {
     console.error('Error al verificar sesión:', error);
-    return { 
-      session: null, 
-      user: null, 
-      error: error.message 
+    return {
+      session: null,
+      user: null,
+      error: error.message
     };
   }
 };
@@ -138,7 +138,7 @@ export const changePassword = async (newPassword) => {
 export const resetPassword = async (email) => {
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: `${window.location.origin}`
     });
 
     return { error };
@@ -171,7 +171,7 @@ export const verificarUsuario = async (dni, nombreCompleto) => {
     // Verificar que el nombre coincida (comparación flexible)
     const nombreBD = data.nombre_completo.toUpperCase().trim();
     const nombreIngresado = nombreCompleto.toUpperCase().trim();
-    
+
     if (nombreBD !== nombreIngresado) {
       throw new Error('Los datos no coinciden con nuestros registros. Verifica tu nombre completo.');
     }
