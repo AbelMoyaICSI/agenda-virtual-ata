@@ -7732,6 +7732,26 @@
                 window.pollingConfirmacionesInterval = null;
             }
 
+            // =========================================================================
+            // LIMPIAR TODOS LOS DATOS DE SESIÓN ALMACENADOS
+            // Esto asegura que al cerrar sesión, no queden datos persistentes
+            // =========================================================================
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('isLoggedIn');
+            sessionStorage.clear(); // Limpiar también sessionStorage por si acaso
+
+            // Limpiar cualquier otra clave de Supabase que pueda quedar
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+
+            console.log('🗑️ Datos de sesión limpiados de localStorage');
+
             // Limpiar estado del usuario
             currentUser = null;
             selectedUserRole = null;
