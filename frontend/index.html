@@ -13061,7 +13061,7 @@
                     const { data: confirmaciones, error: err4 } = await supabase
                         .from('incidencias')
                         .select('*, estudiante:estudiantes(nombre_completo)')
-                        .eq('docente_id', currentUser.id)
+                        .or(`registrado_por.eq.${currentUser.id},docente_id.eq.${currentUser.id}`)
                         .eq('revisado_por_padre', true)
                         .order('updated_at', { ascending: false })
                         .limit(10);
