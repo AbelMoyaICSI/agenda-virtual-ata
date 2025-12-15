@@ -13134,13 +13134,19 @@
 
             const count = notificaciones.length;
 
+            console.log('🎯 actualizarUINotificacionesUsuario - count:', count, 'badge elemento:', !!badge);
+
             if (badge) {
                 if (count > 0) {
                     badge.textContent = count > 99 ? '99+' : count;
                     badge.style.display = 'block';
+                    console.log('✅ Badge VISIBLE con count:', count);
                 } else {
                     badge.style.display = 'none';
+                    console.log('❌ Badge OCULTO porque count es 0');
                 }
+            } else {
+                console.log('⚠️ No se encontró el elemento bellBadge!');
             }
 
             if (lista) {
