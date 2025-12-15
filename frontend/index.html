@@ -7677,12 +7677,21 @@
         async function mostrarModalCambioPassword(email) {
             console.log('📝 Mostrando modal de cambio de contraseña para:', email);
 
-            // Ocultar pantalla de login
-            document.getElementById('loginScreen').style.display = 'none';
+            try {
+                // Esperar un momento para asegurar que todo esté cargado
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-            const result = await Swal.fire({
-                title: '<i class="fas fa-key"></i> Restablecer Contraseña',
-                html: `
+                // Mostrar la pantalla de login como fondo (para que Swal se vea bien)
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.style.display = 'flex';
+                }
+
+                console.log('📝 Abriendo SweetAlert modal...');
+
+                const result = await Swal.fire({
+                    title: '<i class="fas fa-key"></i> Restablecer Contraseña',
+                    html: `
                     <div style="text-align: left; padding: 10px 0;">
                         <p style="margin-bottom: 15px; color: #666;">
                             <strong>Cuenta:</strong> ${email}
@@ -7705,84 +7714,94 @@
                         </div>
                     </div>
                 `,
-                icon: 'info',
-                showCancelButton: false,
-                confirmButtonColor: '#006B3F',
-                confirmButtonText: '<i class="fas fa-save"></i> Guardar Nueva Contraseña',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                preConfirm: () => {
-                    const password = document.getElementById('swal-password').value;
-                    const confirmPassword = document.getElementById('swal-confirm-password').value;
+                    icon: 'info',
+                    showCancelButton: false,
+                    confirmButtonColor: '#006B3F',
+                    confirmButtonText: '<i class="fas fa-save"></i> Guardar Nueva Contraseña',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    preConfirm: () => {
+                        const password = document.getElementById('swal-password').value;
+                        const confirmPassword = document.getElementById('swal-confirm-password').value;
 
-                    if (!password || !confirmPassword) {
-                        Swal.showValidationMessage('Por favor completa ambos campos');
-                        return false;
+                        if (!password || !confirmPassword) {
+                            Swal.showValidationMessage('Por favor completa ambos campos');
+                            return false;
+                        }
+
+                        if (password.length < 6) {
+                            Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+                            return false;
+                        }
+
+                        if (password !== confirmPassword) {
+                            Swal.showValidationMessage('Las contraseñas no coinciden');
+                            return false;
+                        }
+
+                        return { password };
                     }
+                });
 
-                    if (password.length < 6) {
-                        Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
-                        return false;
-                    }
+                if (result.isConfirmed && result.value) {
+                    try {
+                        // Mostrar loading
+                        Swal.fire({
+                            title: 'Actualizando contraseña...',
+                            html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+                            showConfirmButton: false,
+                            allowOutsideClick: false
+                        });
 
-                    if (password !== confirmPassword) {
-                        Swal.showValidationMessage('Las contraseñas no coinciden');
-                        return false;
-                    }
+                        // Actualizar contraseña
+                        const { error } = await supabase.auth.updateUser({
+                            password: result.value.password
+                        });
 
-                    return { password };
-                }
-            });
+                        if (error) throw error;
 
-            if (result.isConfirmed && result.value) {
-                try {
-                    // Mostrar loading
-                    Swal.fire({
-                        title: 'Actualizando contraseña...',
-                        html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
-                        showConfirmButton: false,
-                        allowOutsideClick: false
-                    });
+                        console.log('✅ Contraseña actualizada exitosamente');
 
-                    // Actualizar contraseña
-                    const { error } = await supabase.auth.updateUser({
-                        password: result.value.password
-                    });
+                        // Cerrar sesión de recuperación
+                        await supabase.auth.signOut();
 
-                    if (error) throw error;
-
-                    console.log('✅ Contraseña actualizada exitosamente');
-
-                    // Cerrar sesión de recuperación
-                    await supabase.auth.signOut();
-
-                    // Mostrar éxito
-                    await Swal.fire({
-                        icon: 'success',
-                        title: '¡Contraseña Actualizada!',
-                        html: `
+                        // Mostrar éxito
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '¡Contraseña Actualizada!',
+                            html: `
                             <p>Tu contraseña ha sido cambiada exitosamente.</p>
                             <p style="margin-top: 10px; color: #666;">
                                 <small>Ahora puedes iniciar sesión con tu nueva contraseña.</small>
                             </p>
                         `,
-                        confirmButtonColor: '#006B3F',
-                        confirmButtonText: 'Ir al Inicio de Sesión'
-                    });
+                            confirmButtonColor: '#006B3F',
+                            confirmButtonText: 'Ir al Inicio de Sesión'
+                        });
 
-                    // Mostrar pantalla de login
-                    document.getElementById('loginScreen').style.display = 'flex';
+                        // Mostrar pantalla de login
+                        document.getElementById('loginScreen').style.display = 'flex';
 
-                } catch (err) {
-                    console.error('Error actualizando contraseña:', err);
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo actualizar la contraseña: ' + err.message,
-                        confirmButtonColor: '#006B3F'
-                    });
-                    document.getElementById('loginScreen').style.display = 'flex';
+                    } catch (err) {
+                        console.error('Error actualizando contraseña:', err);
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo actualizar la contraseña: ' + err.message,
+                            confirmButtonColor: '#006B3F'
+                        });
+                        document.getElementById('loginScreen').style.display = 'flex';
+                    }
                 }
+            } catch (modalError) {
+                console.error('Error mostrando modal de recuperación:', modalError);
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Hubo un problema al mostrar el formulario: ' + modalError.message,
+                    confirmButtonColor: '#006B3F'
+                });
+                document.getElementById('loginScreen').style.display = 'flex';
             }
         }
 
