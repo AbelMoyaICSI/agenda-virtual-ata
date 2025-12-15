@@ -12883,13 +12883,13 @@
                     try {
                         debugLog('🔄 Polling confirmaciones...', 'info');
 
-                        // Buscar por registrado_por O docente_id
+                        // Buscar por registrado_por (campo principal usado al crear incidencias)
                         const { data: confirmadas, error } = await supabase
                             .from('incidencias')
-                            .select('id, estudiante_id, comentario_padre, revisado_por_padre, fecha_revision_padre, docente_id, registrado_por, estudiantes!inner(nombre_completo)')
+                            .select('id, estudiante_id, comentario_padre, revisado_por_padre, fecha_revision_padre, registrado_por, estudiantes(nombre_completo)')
                             .eq('revisado_por_padre', true)
+                            .eq('registrado_por', currentUser.id)
                             .gt('fecha_revision_padre', ultimaVerificacion)
-                            .or(`registrado_por.eq.${currentUser.id},docente_id.eq.${currentUser.id}`)
                             .order('fecha_revision_padre', { ascending: false })
                             .limit(5);
 
@@ -13058,13 +13058,31 @@
                 // 3. Para DOCENTES/TUTORES: Confirmaciones de lectura por padres
                 if (role === 'docente' || role === 'tutor') {
                     // Obtener incidencias registradas por este docente donde el padre confirmó lectura
-                    const { data: confirmaciones, error: err4 } = await supabase
+                    // Primero obtenemos por registrado_por
+                    const { data: confirmaciones1, error: err4a } = await supabase
                         .from('incidencias')
                         .select('*, estudiante:estudiantes(nombre_completo)')
-                        .or(`registrado_por.eq.${currentUser.id},docente_id.eq.${currentUser.id}`)
+                        .eq('registrado_por', currentUser.id)
                         .eq('revisado_por_padre', true)
                         .order('updated_at', { ascending: false })
                         .limit(10);
+
+                    // Luego por docente_id (por si acaso)
+                    const { data: confirmaciones2, error: err4b } = await supabase
+                        .from('incidencias')
+                        .select('*, estudiante:estudiantes(nombre_completo)')
+                        .eq('docente_id', currentUser.id)
+                        .eq('revisado_por_padre', true)
+                        .order('updated_at', { ascending: false })
+                        .limit(10);
+
+                    // Combinar resultados (sin duplicados)
+                    const confirmacionesSet = new Map();
+                    [...(confirmaciones1 || []), ...(confirmaciones2 || [])].forEach(c => {
+                        confirmacionesSet.set(c.id, c);
+                    });
+                    const confirmaciones = Array.from(confirmacionesSet.values());
+                    const err4 = err4a || err4b;
 
                     console.log('🔔 Confirmaciones docente:', confirmaciones?.length || 0, confirmaciones);
                     if (err4) console.error('Error confirmaciones:', err4);
