@@ -13628,6 +13628,13 @@
             });
         }
 
+        // Exponer funciones de notificaciones al objeto window
+        window.marcarNotificacionLeida = marcarNotificacionLeida;
+        window.cerrarNotificacionUsuario = cerrarNotificacionUsuario;
+        window.marcarTodasNotificacionesLeidas = marcarTodasNotificacionesLeidas;
+        window.vaciarNotificacionesUsuario = vaciarNotificacionesUsuario;
+        window.verNotificacionUsuario = verNotificacionUsuario;
+
         // Toggle del dropdown de mensajes
         function toggleMessageDropdown(event) {
             event.stopPropagation();
