@@ -4076,9 +4076,14 @@
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                                 <h3><i class="fas fa-exclamation-triangle"></i> Todas las Incidencias</h3>
-                                <button class="btn btn-success" onclick="exportarIncidenciasCSV()">
-                                    <i class="fas fa-download"></i> Exportar CSV
-                                </button>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="btn btn-success" onclick="exportarIncidenciasCSV()">
+                                        <i class="fas fa-download"></i> Exportar CSV
+                                    </button>
+                                    <button class="btn btn-danger" onclick="vaciarTodasIncidenciasAdmin()">
+                                        <i class="fas fa-trash-alt"></i> Vaciar Todas
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Filtros de incidencias -->
@@ -15573,6 +15578,93 @@
             }
         }
 
+        // Vaciar todas las incidencias (solo admin)
+        async function vaciarTodasIncidenciasAdmin() {
+            // Primera confirmación
+            const result1 = await Swal.fire({
+                title: '⚠️ ¿Vaciar TODAS las incidencias?',
+                html: `
+                    <div style="text-align: left; color: #721c24; background: #f8d7da; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <strong><i class="fas fa-exclamation-triangle"></i> ADVERTENCIA:</strong>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                            <li>Esta acción eliminará TODAS las incidencias de la base de datos</li>
+                            <li>Esta acción NO se puede deshacer</li>
+                            <li>Se perderá todo el historial de méritos y deméritos</li>
+                        </ul>
+                    </div>
+                    <p>¿Estás seguro que deseas continuar?</p>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-trash-alt"></i> Sí, continuar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545'
+            });
+
+            if (!result1.isConfirmed) return;
+
+            // Segunda confirmación con texto
+            const result2 = await Swal.fire({
+                title: '🔒 Confirmación Final',
+                html: `
+                    <p style="margin-bottom: 15px;">Para confirmar, escribe <strong>ELIMINAR</strong> en el campo:</p>
+                    <input type="text" id="confirmacionTexto" class="swal2-input" placeholder="Escribe ELIMINAR aquí">
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-trash-alt"></i> Eliminar Todo',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                preConfirm: () => {
+                    const texto = document.getElementById('confirmacionTexto').value;
+                    if (texto !== 'ELIMINAR') {
+                        Swal.showValidationMessage('Debes escribir ELIMINAR exactamente');
+                        return false;
+                    }
+                    return true;
+                }
+            });
+
+            if (!result2.isConfirmed) return;
+
+            try {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Eliminando incidencias...',
+                    text: 'Por favor espera',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                // Eliminar todas las incidencias
+                const { error } = await supabase
+                    .from('incidencias')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Elimina todas (truco para delete all)
+
+                if (error) throw error;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Incidencias eliminadas',
+                    text: 'Todas las incidencias han sido eliminadas de la base de datos',
+                    confirmButtonColor: 'var(--color-ata-verde)'
+                });
+
+                // Recargar tabla
+                await cargarIncidenciasAdmin();
+
+            } catch (error) {
+                console.error('Error vaciando incidencias:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudieron eliminar las incidencias: ' + (error.message || 'Error desconocido'),
+                    confirmButtonColor: 'var(--color-ata-verde)'
+                });
+            }
+        }
+
         async function exportarEstudiantesCSV() {
             try {
                 // Cargar datos frescos con relaciones de apoderados
@@ -16409,6 +16501,81 @@ ${'='.repeat(70)}
                     console.error('❌ NO se encontró el demérito en el catálogo!');
                     mostrarAlerta('No se pudo encontrar el demérito seleccionado. Por favor intente de nuevo.', 'Error', 'error');
                     return;
+                }
+            }
+
+            // =========================================================================
+            // VERIFICAR SI EL GRADO/SECCIÓN SELECCIONADO DIFIERE DEL REGISTRADO
+            // Si el docente seleccionó un aula diferente, preguntar si desea actualizar
+            // =========================================================================
+            if (nuevoGrado && nuevaSeccion) {
+                const gradoActual = estudianteSeleccionado.grado;
+                const seccionActual = estudianteSeleccionado.seccion;
+
+                const gradoCambio = gradoActual && String(gradoActual) !== String(nuevoGrado);
+                const seccionCambio = seccionActual && seccionActual !== nuevaSeccion;
+
+                if (gradoCambio || seccionCambio) {
+                    // Construir mensaje según qué cambió
+                    let mensajeCambio = '';
+                    if (gradoCambio && seccionCambio) {
+                        mensajeCambio = `de <strong>${gradoActual}° ${seccionActual}</strong> a <strong>${nuevoGrado}° ${nuevaSeccion}</strong>`;
+                    } else if (gradoCambio) {
+                        mensajeCambio = `de grado <strong>${gradoActual}°</strong> a <strong>${nuevoGrado}°</strong>`;
+                    } else {
+                        mensajeCambio = `de sección <strong>${seccionActual}</strong> a <strong>${nuevaSeccion}</strong>`;
+                    }
+
+                    const confirmacion = await Swal.fire({
+                        title: '📋 Cambio de Aula Detectado',
+                        html: `
+                            <div style="text-align: left;">
+                                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                                    <p style="margin: 0 0 10px 0;">
+                                        <strong><i class="fas fa-user-graduate"></i> ${estudianteSeleccionado.nombre_completo}</strong>
+                                    </p>
+                                    <p style="margin: 0; color: #856404;">
+                                        Está registrado en <strong>${gradoActual}° ${seccionActual}</strong>, 
+                                        pero seleccionaste <strong>${nuevoGrado}° ${nuevaSeccion}</strong>
+                                    </p>
+                                </div>
+                                
+                                <p style="margin-bottom: 10px;">
+                                    <i class="fas fa-question-circle" style="color: var(--color-ata-azul);"></i>
+                                    Es posible que este estudiante haya pasado de año o cambiado de sección.
+                                </p>
+                                
+                                <p style="margin-bottom: 15px;">
+                                    <strong>¿Deseas registrar esta incidencia y actualizar el aula del estudiante?</strong>
+                                </p>
+                                
+                                <div style="background: #e7f3ff; padding: 10px; border-radius: 8px; font-size: 12px; color: #0056b3;">
+                                    <i class="fas fa-info-circle"></i> Si confirmas, el estudiante quedará registrado en ${nuevoGrado}° ${nuevaSeccion}
+                                </div>
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        showDenyButton: true,
+                        confirmButtonText: '<i class="fas fa-check"></i> Sí, registrar y actualizar aula',
+                        denyButtonText: '<i class="fas fa-save"></i> Solo registrar (no actualizar)',
+                        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+                        confirmButtonColor: 'var(--color-ata-verde)',
+                        denyButtonColor: 'var(--color-ata-azul)',
+                        width: 550
+                    });
+
+                    if (confirmacion.isDismissed) {
+                        // Usuario canceló
+                        return;
+                    }
+
+                    if (confirmacion.isDenied) {
+                        // Usuario quiere registrar pero NO actualizar el aula
+                        incidenciaData.nuevoGrado = null;
+                        incidenciaData.nuevaSeccion = null;
+                    }
+                    // Si confirmó, se mantienen los datos para actualizar el aula
                 }
             }
 
