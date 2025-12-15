@@ -3085,7 +3085,45 @@
                         Volver al login
                     </button>
 
+                    <!-- Enlace especial para administradores -->
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center;">
+                        <a href="javascript:void(0)" onclick="mostrarRecuperacionAdmin()"
+                            style="color: var(--color-ata-azul); font-size: 13px;">
+                            <i class="fas fa-user-shield"></i> ¿Eres administrador del sistema?
+                        </a>
+                    </div>
+
                     <div id="recuperarMessage" class="form-message"></div>
+
+                    <!-- Formulario especial para admin (oculto) -->
+                    <div id="step4Admin" style="display: none; margin-top: 25px;">
+                        <div class="alert alert-info" style="margin-bottom: 20px;">
+                            <i class="fas fa-user-shield"></i>
+                            <strong>Recuperación de Administrador</strong><br>
+                            <small>Ingresa el correo electrónico registrado para tu cuenta de administrador</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Correo Electrónico del Admin <span
+                                    style="color: red;">*</span></label>
+                            <input type="email" id="email_admin_recuperar" class="form-input"
+                                placeholder="admin@correo.com" style="text-transform: lowercase;">
+                        </div>
+
+                        <button type="button" class="btn btn-success" onclick="enviarEmailRecuperacionAdmin()"
+                            id="btnEnviarRecuperacionAdmin">
+                            <i class="fas fa-envelope"></i>
+                            Enviar enlace de recuperación
+                        </button>
+
+                        <button type="button" class="btn btn-secondary" onclick="cancelarRecuperacionAdmin()"
+                            style="margin-top: 10px;">
+                            <i class="fas fa-arrow-left"></i>
+                            Cancelar
+                        </button>
+
+                        <div id="adminRecuperarMessage" class="form-message"></div>
+                    </div>
 
                     <!-- Formulario para verificar email (oculto hasta verificar DNI) -->
                     <div id="step4b" style="display: none; margin-top: 25px;">
@@ -9072,6 +9110,122 @@
             const dominioCensurado = domainName.substring(0, 2) + '***';
 
             return `${localCensurado}@${dominioCensurado}.${domainExt}`;
+        }
+
+        // ==================== FUNCIONES PARA RECUPERACIÓN DE ADMIN ====================
+
+        // Mostrar formulario especial de recuperación para admin
+        function mostrarRecuperacionAdmin() {
+            // Ocultar formulario normal
+            document.getElementById('recuperar_dni').parentElement.style.display = 'none';
+            document.getElementById('recuperar_nombre').parentElement.style.display = 'none';
+            document.getElementById('btnVerificarRecuperar').style.display = 'none';
+
+            // Mostrar formulario de admin
+            document.getElementById('step4Admin').style.display = 'block';
+            document.getElementById('email_admin_recuperar').focus();
+        }
+
+        // Cancelar recuperación de admin
+        function cancelarRecuperacionAdmin() {
+            // Mostrar formulario normal
+            document.getElementById('recuperar_dni').parentElement.style.display = 'block';
+            document.getElementById('recuperar_nombre').parentElement.style.display = 'block';
+            document.getElementById('btnVerificarRecuperar').style.display = 'block';
+
+            // Ocultar formulario de admin
+            document.getElementById('step4Admin').style.display = 'none';
+            document.getElementById('adminRecuperarMessage').innerHTML = '';
+            document.getElementById('adminRecuperarMessage').classList.remove('show');
+        }
+
+        // Enviar email de recuperación para admin
+        async function enviarEmailRecuperacionAdmin() {
+            const emailInput = document.getElementById('email_admin_recuperar');
+            const email = emailInput.value.trim().toLowerCase();
+            const messageContainer = document.getElementById('adminRecuperarMessage');
+            const btnEnviar = document.getElementById('btnEnviarRecuperacionAdmin');
+
+            // Validar email
+            if (!email) {
+                messageContainer.innerHTML = 'Por favor ingresa tu correo electrónico';
+                messageContainer.className = 'form-message error show';
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                messageContainer.innerHTML = 'Por favor ingresa un correo electrónico válido';
+                messageContainer.className = 'form-message error show';
+                return;
+            }
+
+            try {
+                btnEnviar.disabled = true;
+                messageContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando cuenta de administrador...';
+                messageContainer.className = 'form-message info show';
+
+                // Verificar que el email corresponda a un admin en la tabla users
+                const { data: adminUser, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('role', 'admin')
+                    .maybeSingle();
+
+                if (userError) throw userError;
+
+                if (!adminUser) {
+                    messageContainer.innerHTML = `
+                        <strong><i class="fas fa-times-circle"></i> No autorizado</strong><br>
+                        Este correo no corresponde a una cuenta de administrador del sistema.
+                    `;
+                    messageContainer.className = 'form-message error show';
+                    btnEnviar.disabled = false;
+                    return;
+                }
+
+                // Verificar que tenga cuenta activada
+                if (!adminUser.activado) {
+                    messageContainer.innerHTML = `
+                        <strong><i class="fas fa-info-circle"></i> Cuenta no activada</strong><br>
+                        Tu cuenta de administrador aún no ha sido activada.
+                    `;
+                    messageContainer.className = 'form-message error show';
+                    btnEnviar.disabled = false;
+                    return;
+                }
+
+                messageContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando correo de recuperación...';
+
+                // Enviar email de recuperación
+                const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+                    email,
+                    {
+                        redirectTo: window.location.origin
+                    }
+                );
+
+                if (resetError) throw resetError;
+
+                // Ocultar step4Admin
+                document.getElementById('step4Admin').style.display = 'none';
+
+                // Mostrar step5 con animación
+                document.getElementById('emailEnviadoDestino').textContent = email;
+                document.getElementById('step5').style.display = 'block';
+
+                // Scroll suave hacia step5
+                setTimeout(() => {
+                    document.getElementById('step5').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+
+            } catch (err) {
+                console.error('Error enviando email admin:', err);
+                messageContainer.innerHTML = `Error al enviar correo: ${err.message}`;
+                messageContainer.className = 'form-message error show';
+                btnEnviar.disabled = false;
+            }
         }
 
         // Función para validar contraseña de recuperación
@@ -16512,8 +16666,11 @@ ${'='.repeat(70)}
                 const gradoActual = estudianteSeleccionado.grado;
                 const seccionActual = estudianteSeleccionado.seccion;
 
-                const gradoCambio = gradoActual && String(gradoActual) !== String(nuevoGrado);
-                const seccionCambio = seccionActual && seccionActual !== nuevaSeccion;
+                // Detectar cambio: si hay diferencia O si el estudiante no tiene grado/sección
+                const gradoCambio = String(gradoActual || '') !== String(nuevoGrado);
+                const seccionCambio = String(seccionActual || '') !== String(nuevaSeccion);
+
+                console.log('🔍 Verificando cambio de aula:', { gradoActual, seccionActual, nuevoGrado, nuevaSeccion, gradoCambio, seccionCambio });
 
                 if (gradoCambio || seccionCambio) {
                     // Construir mensaje según qué cambió
