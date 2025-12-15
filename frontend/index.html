@@ -12524,8 +12524,31 @@
             });
             canalesActivos = [];
 
-            // Función auxiliar para manejar notificaciones
+            // Sistema de deduplicación de notificaciones
+            const notificacionesMostradas = new Set();
+            const TIEMPO_EXPIRACION_NOTIF = 30000; // 30 segundos
+
+            // Función auxiliar para manejar notificaciones (con deduplicación)
             const manejarNotificacion = async (titulo, descripcion, callback) => {
+                // Crear clave única para esta notificación
+                const claveNotif = `${titulo}|${descripcion.substring(0, 50)}`;
+
+                // Si ya mostramos esta notificación recientemente, no repetir
+                if (notificacionesMostradas.has(claveNotif)) {
+                    debugLog(`🔕 Notificación duplicada ignorada: ${titulo}`, 'warning');
+                    // Aún ejecutar callback para actualizar datos
+                    if (callback) await callback();
+                    return;
+                }
+
+                // Marcar como mostrada
+                notificacionesMostradas.add(claveNotif);
+
+                // Limpiar después de un tiempo
+                setTimeout(() => {
+                    notificacionesMostradas.delete(claveNotif);
+                }, TIEMPO_EXPIRACION_NOTIF);
+
                 debugLog(`🔔 ${titulo}: ${descripcion}`, 'success');
 
                 // 1. Reproducir sonido (garantizado)
