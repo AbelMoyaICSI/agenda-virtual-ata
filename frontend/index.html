@@ -13273,6 +13273,11 @@
                     notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== id);
                     actualizarUINotificacionesUsuario(notificacionesUsuario);
                     mostrarNotificacion('Notificación marcada como leída', 'success');
+                } else if (tipo === 'confirmacion_lectura') {
+                    // DOCENTE: confirmación de lectura de padre - solo quitar de la lista
+                    notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== id);
+                    actualizarUINotificacionesUsuario(notificacionesUsuario);
+                    mostrarNotificacion('✅ Notificación marcada como leída', 'success');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -13331,6 +13336,7 @@
                         .update({ respuesta_vista: true })
                         .eq('id', id);
                 }
+                // Para confirmacion_lectura (docente), no hay nada que actualizar en BD
 
                 // Remover de la lista local
                 notificacionesUsuario = notificacionesUsuario.filter(n => n.id !== id);
