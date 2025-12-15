@@ -14799,9 +14799,9 @@
                     .from('estudiantes')
                     .select(`
                         *,
-                        padre:padre_id (id, nombre_completo, email, telefono),
-                        madre:madre_id (id, nombre_completo, email, telefono),
-                        apoderado:apoderado_id (id, nombre_completo, email, telefono)
+                        padre:padre_id (id, nombre_completo, email, telefono, activado),
+                        madre:madre_id (id, nombre_completo, email, telefono, activado),
+                        apoderado:apoderado_id (id, nombre_completo, email, telefono, activado)
                     `)
                     .order('grado', { ascending: true })
                     .order('seccion', { ascending: true })
