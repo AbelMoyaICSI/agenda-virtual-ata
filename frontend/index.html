@@ -11222,14 +11222,28 @@
                 console.log('📊 [DEBUG] Roles únicos en BD:', rolesUnicos);
                 console.log('📊 [DEBUG] Ejemplo de usuarios:', usuarios?.slice(0, 3));
 
-                // Contar usuarios por rol
+                // ============================================
+                // CONTAR USUARIOS POR ROL (queries individuales para bypass límite 1000)
+                // ============================================
                 const distribucionRoles = {};
-                todosLosRoles.forEach(rol => distribucionRoles[rol] = 0);
-                usuarios?.forEach(u => {
-                    if (u.role && distribucionRoles.hasOwnProperty(u.role)) {
-                        distribucionRoles[u.role]++;
+                
+                // Hacer una query de count por cada rol (más preciso que contar del array limitado)
+                for (const rol of todosLosRoles) {
+                    try {
+                        const { count, error } = await supabase
+                            .from('users')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('role', rol);
+                        
+                        distribucionRoles[rol] = count || 0;
+                    } catch (e) {
+                        distribucionRoles[rol] = 0;
                     }
-                });
+                }
+                
+                console.log('📊 Distribución por rol (queries individuales):', distribucionRoles);
+                const sumaTotal = Object.values(distribucionRoles).reduce((a, b) => a + b, 0);
+                console.log(`📊 Suma total roles: ${sumaTotal} vs Total count: ${totalUsuariosCount}`);
 
                 // Encontrar el máximo para escalar las barras proporcionalmente
                 const maxCount = Math.max(...Object.values(distribucionRoles), 1);
