@@ -7734,11 +7734,16 @@
         async function mostrarModalCambioPassword(email) {
             console.log('📝 [RECOVERY] Iniciando mostrarModalCambioPassword para:', email);
 
+            // ============ BLOQUEAR AUTO-LOGIN DURANTE RECUPERACIÓN ============
+            window.isPasswordRecoveryMode = true;
+            console.log('🔒 [RECOVERY] Modo recuperación activado - auto-login bloqueado');
+
             try {
                 // Verificar que SweetAlert2 esté disponible
                 if (typeof Swal === 'undefined') {
                     console.error('❌ [RECOVERY] SweetAlert2 no está cargado!');
                     alert('Error: La librería de alertas no está cargada. Por favor recarga la página.');
+                    window.isPasswordRecoveryMode = false;
                     return;
                 }
                 console.log('✅ [RECOVERY] SweetAlert2 está disponible');
@@ -7748,13 +7753,25 @@
                 await new Promise(resolve => setTimeout(resolve, 500));
                 console.log('✅ [RECOVERY] Espera completada');
 
-                // Mostrar la pantalla de login como fondo (para que Swal se vea bien)
+                // ============ OCULTAR TODOS LOS STEPS Y MOSTRAR SOLO LOGIN LIMPIO ============
                 const loginScreen = document.getElementById('loginScreen');
                 console.log('📝 [RECOVERY] loginScreen encontrado:', !!loginScreen);
                 if (loginScreen) {
                     loginScreen.style.display = 'flex';
                     console.log('✅ [RECOVERY] loginScreen.style.display = flex');
                 }
+
+                // OCULTAR TODOS LOS STEPS - muy importante para evitar que aparezca el formulario de login
+                const stepsToHide = ['step1', 'step1b', 'step2', 'step3', 'step4', 'step4b', 'step5'];
+                stepsToHide.forEach(stepId => {
+                    const step = document.getElementById(stepId);
+                    if (step) {
+                        step.style.display = 'none';
+                        step.classList.add('hidden');
+                        step.classList.remove('visible');
+                    }
+                });
+                console.log('✅ [RECOVERY] Todos los steps ocultados');
 
                 console.log('📝 [RECOVERY] Abriendo SweetAlert modal AHORA...');
 
@@ -7983,6 +8000,12 @@
         // Verificar si hay sesión activa al cargar la página
         async function checkExistingSession() {
             try {
+                // ============ VERIFICAR SI ESTAMOS EN MODO RECUPERACIÓN ============
+                if (window.isPasswordRecoveryMode === true) {
+                    console.log('🔒 [checkExistingSession] Modo recuperación activo - bloqueando auto-login');
+                    return false; // No auto-login durante recuperación de contraseña
+                }
+
                 console.log('🔍 Verificando sesión existente...');
 
                 // =========================================================================
