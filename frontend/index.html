@@ -13,6 +13,9 @@
     <!-- SweetAlert2 para modales bonitos -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- SheetJS para leer/escribir archivos Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
     <style>
         /* Variables CSS con colores institucionales ATA */
         :root {
@@ -11091,6 +11094,8 @@
                 cargarTablaSoporte();
             } else if (tabName === 'administradores') {
                 cargarAdministradores();
+            } else if (tabName === 'importar') {
+                cargarTabImportar();
             }
         }
 
@@ -11100,26 +11105,26 @@
                 // ==========================================
                 // CARGA DE DATOS DEL DASHBOARD
                 // ==========================================
-                
+
                 // 1. USUARIOS - Usar count exacto + cargar datos para distribución
                 let usuarios = [];
                 let totalUsuariosCount = 0;
-                
+
                 try {
                     // Primero obtener el conteo total
                     const { count: countUsers, error: errCount } = await supabase
                         .from('users')
                         .select('*', { count: 'exact', head: true });
-                    
+
                     totalUsuariosCount = countUsers || 0;
                     console.log(`📊 Total usuarios (count): ${totalUsuariosCount}`);
-                    
+
                     // Cargar datos para la distribución por rol (hasta 5000)
                     const { data: usersData, error: errUsers } = await supabase
                         .from('users')
                         .select('id, role, activo, created_at, nombre_completo')
                         .order('created_at', { ascending: false });
-                    
+
                     if (usersData) {
                         usuarios = usersData;
                         console.log(`📊 Usuarios cargados: ${usuarios.length}`);
@@ -11137,32 +11142,32 @@
                     const { count: countEst, error: errEst } = await supabase
                         .from('estudiantes')
                         .select('*', { count: 'exact', head: true });
-                    
+
                     totalEstudiantesCount = countEst || 0;
                     console.log(`📊 Total estudiantes: ${totalEstudiantesCount}`);
                 } catch (e) {
                     console.error('Error cargando estudiantes:', e);
                 }
-                
+
                 // 3. INCIDENCIAS - Count + datos para gráfico
                 let incidencias = [];
                 let totalIncidenciasCount = 0;
-                
+
                 try {
                     // Primero el count
                     const { count: countInc, error: errCountInc } = await supabase
                         .from('incidencias')
                         .select('*', { count: 'exact', head: true });
-                    
+
                     totalIncidenciasCount = countInc || 0;
                     console.log(`📊 Total incidencias: ${totalIncidenciasCount}`);
-                    
+
                     // Cargar datos para el gráfico del mes
                     const { data: incData, error: errInc } = await supabase
                         .from('incidencias')
                         .select('id, tipo, fecha, created_at, descripcion')
                         .order('fecha', { ascending: false });
-                    
+
                     if (incData) {
                         incidencias = incData;
                     }
@@ -11226,7 +11231,7 @@
                 // CONTAR USUARIOS POR ROL (queries individuales para bypass límite 1000)
                 // ============================================
                 const distribucionRoles = {};
-                
+
                 // Hacer una query de count por cada rol (más preciso que contar del array limitado)
                 for (const rol of todosLosRoles) {
                     try {
@@ -11234,13 +11239,13 @@
                             .from('users')
                             .select('*', { count: 'exact', head: true })
                             .eq('role', rol);
-                        
+
                         distribucionRoles[rol] = count || 0;
                     } catch (e) {
                         distribucionRoles[rol] = 0;
                     }
                 }
-                
+
                 console.log('📊 Distribución por rol (queries individuales):', distribucionRoles);
                 const sumaTotal = Object.values(distribucionRoles).reduce((a, b) => a + b, 0);
                 console.log(`📊 Suma total roles: ${sumaTotal} vs Total count: ${totalUsuariosCount}`);
@@ -11554,6 +11559,687 @@
                 console.log('⚠️ No se pudieron cargar acciones de admin');
             }
             return window.adminActionsLog || [];
+        }
+
+        // ===== SISTEMA DE IMPORTACIÓN MASIVA DE DATOS =====
+
+        // Variables para almacenar datos de importación
+        let datosImportacionPendientes = [];
+        let erroresImportacion = [];
+
+        // Función para generar la interfaz del tab de importación
+        function cargarTabImportar() {
+            // Buscar el contenedor de tabs del admin para agregar el botón si no existe
+            const botonesContainer = document.querySelector('.admin-tabs-nav, .btn-group');
+            if (botonesContainer && !document.getElementById('tabAdminImportar')) {
+                // Crear botón de tab "Importar"
+                const btnImportar = document.createElement('button');
+                btnImportar.id = 'tabAdminImportar';
+                btnImportar.className = 'btn btn-secondary admin-tab-btn';
+                btnImportar.innerHTML = '<i class="fas fa-file-import"></i> Importar';
+                btnImportar.onclick = () => showAdminTab('importar');
+                botonesContainer.appendChild(btnImportar);
+            }
+
+            // Buscar contenedor de contenidos de tabs para agregar el contenedor si no existe
+            let container = document.getElementById('adminTabImportar');
+            if (!container) {
+                // Buscar el contenedor padre de todos los tabs de contenido
+                const tabContents = document.querySelector('.admin-tab-content')?.parentElement;
+                if (tabContents) {
+                    container = document.createElement('div');
+                    container.id = 'adminTabImportar';
+                    container.className = 'admin-tab-content';
+                    container.style.display = 'block';
+                    tabContents.appendChild(container);
+                } else {
+                    // Fallback: crear en el contenido principal
+                    const mainContent = document.querySelector('.main-content, .content-section');
+                    if (mainContent) {
+                        container = document.createElement('div');
+                        container.id = 'adminTabImportar';
+                        container.className = 'admin-tab-content';
+                        container.style.display = 'block';
+                        mainContent.appendChild(container);
+                    } else {
+                        console.error('❌ No se pudo encontrar un contenedor para el tab de importación');
+                        // Como último recurso, mostrar modal
+                        mostrarModalImportacion();
+                        return;
+                    }
+                }
+            }
+
+            container.innerHTML = `
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <h3 style="margin: 0;"><i class="fas fa-file-import"></i> Importación Masiva de Datos</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <!-- Paso 1: Descargar Plantilla -->
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px dashed #ddd;">
+                                <h4 style="color: #667eea; margin-bottom: 15px;">
+                                    <span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 50%; margin-right: 10px;">1</span>
+                                    Descargar Plantilla
+                                </h4>
+                                <p style="color: #666; margin-bottom: 15px;">
+                                    Descarga la plantilla Excel con el formato correcto para importar estudiantes y apoderados.
+                                </p>
+                                <button onclick="descargarPlantillaImportacion()" class="btn btn-primary" style="width: 100%;">
+                                    <i class="fas fa-download"></i> Descargar Plantilla Excel
+                                </button>
+                                <small style="display: block; margin-top: 10px; color: #888;">
+                                    <i class="fas fa-info-circle"></i> Llena la plantilla con los datos de estudiantes y sus apoderados
+                                </small>
+                            </div>
+
+                            <!-- Paso 2: Subir Archivo -->
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px dashed #ddd;">
+                                <h4 style="color: #764ba2; margin-bottom: 15px;">
+                                    <span style="background: #764ba2; color: white; padding: 5px 12px; border-radius: 50%; margin-right: 10px;">2</span>
+                                    Subir Archivo Completado
+                                </h4>
+                                <div id="dropZoneImportar" 
+                                     ondrop="handleDropImportar(event)" 
+                                     ondragover="event.preventDefault(); this.style.borderColor='#764ba2'; this.style.background='#f0e6ff';"
+                                     ondragleave="this.style.borderColor='#ddd'; this.style.background='white';"
+                                     style="border: 2px dashed #ddd; padding: 30px; text-align: center; border-radius: 8px; cursor: pointer; transition: all 0.3s; background: white;">
+                                    <i class="fas fa-cloud-upload-alt" style="font-size: 40px; color: #764ba2; margin-bottom: 10px;"></i>
+                                    <p style="margin: 0; color: #666;">Arrastra tu archivo aquí o</p>
+                                    <input type="file" id="archivoImportar" accept=".xlsx,.xls,.csv" onchange="procesarArchivoImportacion(this.files[0])" style="display: none;">
+                                    <button onclick="document.getElementById('archivoImportar').click()" class="btn btn-secondary" style="margin-top: 10px;">
+                                        <i class="fas fa-folder-open"></i> Seleccionar archivo
+                                    </button>
+                                </div>
+                                <small style="display: block; margin-top: 10px; color: #888;">
+                                    <i class="fas fa-file-excel"></i> Formatos aceptados: .xlsx, .xls, .csv
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista previa y resultados -->
+                <div id="seccionVistaPrevia" style="display: none;">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div class="card-header" style="background: #f5f5f5;">
+                            <h4 style="margin: 0;"><i class="fas fa-table"></i> Vista Previa de Datos</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="resumenImportacion" style="margin-bottom: 15px;"></div>
+                            <div id="erroresImportacionContainer" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                                <h5 style="color: #856404; margin-bottom: 10px;"><i class="fas fa-exclamation-triangle"></i> Advertencias/Errores</h5>
+                                <div id="listaErroresImportacion"></div>
+                            </div>
+                            <div style="max-height: 400px; overflow: auto;">
+                                <table class="table" id="tablaVistaPrevia" style="font-size: 12px;">
+                                    <thead id="encabezadoVistaPrevia"></thead>
+                                    <tbody id="cuerpoVistaPrevia"></tbody>
+                                </table>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                                <button onclick="cancelarImportacion()" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button onclick="ejecutarImportacion()" class="btn btn-success" id="btnConfirmarImportacion">
+                                    <i class="fas fa-check"></i> Confirmar Importación
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de progreso -->
+                <div id="seccionProgreso" style="display: none;">
+                    <div class="card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white;">
+                            <h4 style="margin: 0;"><i class="fas fa-spinner fa-spin"></i> Importando Datos...</h4>
+                        </div>
+                        <div class="card-body" style="text-align: center; padding: 40px;">
+                            <div style="max-width: 400px; margin: 0 auto;">
+                                <div style="background: #e9ecef; border-radius: 10px; height: 20px; overflow: hidden;">
+                                    <div id="barraProgresoImportacion" style="background: linear-gradient(90deg, #28a745, #20c997); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                                </div>
+                                <p id="textoProgresoImportacion" style="margin-top: 15px; color: #666;">Preparando importación...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Función para manejar el drop de archivos
+        function handleDropImportar(event) {
+            event.preventDefault();
+            const dropZone = document.getElementById('dropZoneImportar');
+            dropZone.style.borderColor = '#ddd';
+            dropZone.style.background = 'white';
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                procesarArchivoImportacion(files[0]);
+            }
+        }
+
+        // Función para descargar la plantilla de importación
+        function descargarPlantillaImportacion() {
+            // Definir las columnas según el formato original
+            const columnas = [
+                'ESTUDIANTE_GRADO',
+                'ESTUDIANTE_SECCION',
+                'ESTUDIANTE_NUMERO_DE_DOCUMENTO',
+                'ESTUDIANTE_APELLIDO_PATERNO',
+                'ESTUDIANTE_APELLIDO_MATERNO',
+                'ESTUDIANTE_NOMBRES',
+                'ESTUDIANTE_SEXO',
+                'ESTUDIANTE_FECHA_DE_NACIMIENTO',
+                'PADRE_APELLIDOS_NOMBRES',
+                'PADRE_TIPO_DOCUMENTO',
+                'PADRE_NUMERO_DE_DOCUMENTO',
+                'PADRE_SEXO',
+                'PADRE_PARENTESCO',
+                'PADRE_NUMERO_CELULAR',
+                'MADRE_APELLIDOS_NOMBRES',
+                'MADRE_TIPO_DOCUMENTO',
+                'MADRE_NUMERO_DE_DOCUMENTO',
+                'MADRE_SEXO',
+                'MADRE_PARENTESCO',
+                'MADRE_NUMERO_CELULAR',
+                'APODERADO_APELLIDOS_NOMBRES',
+                'APODERADO_TIPO_DOCUMENTO',
+                'APODERADO_NUMERO_DE_DOCUMENTO',
+                'APODERADO_SEXO',
+                'APODERADO_PARENTESCO',
+                'APODERADO_NUMERO_CELULAR'
+            ];
+
+            // Ejemplo de datos para mostrar el formato
+            const ejemplos = [
+                {
+                    'ESTUDIANTE_GRADO': 'PRIMERO',
+                    'ESTUDIANTE_SECCION': 'A',
+                    'ESTUDIANTE_NUMERO_DE_DOCUMENTO': '77927245',
+                    'ESTUDIANTE_APELLIDO_PATERNO': 'GARCIA',
+                    'ESTUDIANTE_APELLIDO_MATERNO': 'LOPEZ',
+                    'ESTUDIANTE_NOMBRES': 'MARIA FERNANDA',
+                    'ESTUDIANTE_SEXO': 'Mujer',
+                    'ESTUDIANTE_FECHA_DE_NACIMIENTO': '2010-05-15',
+                    'PADRE_APELLIDOS_NOMBRES': 'GARCIA MENDOZA JUAN CARLOS',
+                    'PADRE_TIPO_DOCUMENTO': 'DNI',
+                    'PADRE_NUMERO_DE_DOCUMENTO': '18201299',
+                    'PADRE_SEXO': 'Hombre',
+                    'PADRE_PARENTESCO': 'PADRE',
+                    'PADRE_NUMERO_CELULAR': '948528485',
+                    'MADRE_APELLIDOS_NOMBRES': 'LOPEZ CHAVEZ ANA MARIA',
+                    'MADRE_TIPO_DOCUMENTO': 'DNI',
+                    'MADRE_NUMERO_DE_DOCUMENTO': '18153327',
+                    'MADRE_SEXO': 'Mujer',
+                    'MADRE_PARENTESCO': 'MADRE',
+                    'MADRE_NUMERO_CELULAR': '976543210',
+                    'APODERADO_APELLIDOS_NOMBRES': '',
+                    'APODERADO_TIPO_DOCUMENTO': '',
+                    'APODERADO_NUMERO_DE_DOCUMENTO': '',
+                    'APODERADO_SEXO': '',
+                    'APODERADO_PARENTESCO': '',
+                    'APODERADO_NUMERO_CELULAR': ''
+                }
+            ];
+
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(ejemplos, { header: columnas });
+
+            // Ajustar ancho de columnas
+            ws['!cols'] = columnas.map(col => ({ wch: col.length + 5 }));
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
+
+            // Descargar
+            XLSX.writeFile(wb, 'plantilla_importacion_ata.xlsx');
+            mostrarNotificacion('Plantilla descargada correctamente', 'success');
+        }
+
+        // Función para procesar el archivo subido
+        async function procesarArchivoImportacion(file) {
+            if (!file) return;
+
+            const extensionesValidas = ['.xlsx', '.xls', '.csv'];
+            const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+            if (!extensionesValidas.includes(extension)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Formato no válido',
+                    text: 'Por favor sube un archivo Excel (.xlsx, .xls) o CSV',
+                    confirmButtonColor: 'var(--color-ata-verde)'
+                });
+                return;
+            }
+
+            try {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Procesando archivo...',
+                    html: '<i class="fas fa-spinner fa-spin" style="font-size: 30px;"></i>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false
+                });
+
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: 'array' });
+                const primeraHoja = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[primeraHoja];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                Swal.close();
+
+                if (jsonData.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Archivo vacío',
+                        text: 'El archivo no contiene datos para importar',
+                        confirmButtonColor: 'var(--color-ata-verde)'
+                    });
+                    return;
+                }
+
+                // Validar datos
+                const { datosValidos, errores } = validarDatosImportacion(jsonData);
+
+                datosImportacionPendientes = datosValidos;
+                erroresImportacion = errores;
+
+                // Mostrar vista previa
+                mostrarVistaPrevia(jsonData, datosValidos, errores);
+
+            } catch (error) {
+                console.error('Error procesando archivo:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al procesar',
+                    text: 'No se pudo leer el archivo: ' + error.message,
+                    confirmButtonColor: 'var(--color-ata-verde)'
+                });
+            }
+        }
+
+        // Función para validar los datos de importación
+        function validarDatosImportacion(datos) {
+            const datosValidos = [];
+            const errores = [];
+            const dnisVistos = new Set();
+
+            datos.forEach((fila, index) => {
+                const numFila = index + 2; // +2 porque empezamos en fila 2 del Excel
+                const erroresFila = [];
+
+                // Obtener DNI del estudiante (puede venir con diferentes nombres de columna)
+                const dniEstudiante = fila['ESTUDIANTE_NUMERO_DE_DOCUMENTO'] || fila['DNI_ESTUDIANTE'] || '';
+
+                // Validar DNI estudiante
+                if (!dniEstudiante) {
+                    erroresFila.push('Falta DNI del estudiante');
+                } else if (!/^\d{8}$/.test(dniEstudiante.toString().trim())) {
+                    erroresFila.push(`DNI estudiante inválido: ${dniEstudiante}`);
+                } else if (dnisVistos.has(dniEstudiante.toString().trim())) {
+                    erroresFila.push(`DNI estudiante duplicado: ${dniEstudiante}`);
+                } else {
+                    dnisVistos.add(dniEstudiante.toString().trim());
+                }
+
+                // Validar nombre completo
+                const apellidoP = fila['ESTUDIANTE_APELLIDO_PATERNO'] || '';
+                const apellidoM = fila['ESTUDIANTE_APELLIDO_MATERNO'] || '';
+                const nombres = fila['ESTUDIANTE_NOMBRES'] || '';
+
+                if (!apellidoP && !nombres) {
+                    erroresFila.push('Falta nombre del estudiante');
+                }
+
+                // Validar grado
+                const grado = (fila['ESTUDIANTE_GRADO'] || '').toString().toUpperCase().trim();
+                const gradosValidos = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', '1', '2', '3', '4', '5'];
+                if (!gradosValidos.includes(grado)) {
+                    erroresFila.push(`Grado inválido: ${grado}`);
+                }
+
+                // Validar sección
+                const seccion = (fila['ESTUDIANTE_SECCION'] || '').toString().toUpperCase().trim();
+                const seccionesValidas = ['A', 'B', 'C', 'D', 'E'];
+                if (!seccionesValidas.includes(seccion)) {
+                    erroresFila.push(`Sección inválida: ${seccion}`);
+                }
+
+                // Validar DNI de apoderados (si existen)
+                const dniPadre = fila['PADRE_NUMERO_DE_DOCUMENTO'] || '';
+                const dniMadre = fila['MADRE_NUMERO_DE_DOCUMENTO'] || '';
+                const dniApoderado = fila['APODERADO_NUMERO_DE_DOCUMENTO'] || '';
+
+                if (dniPadre && !/^\d{8}$/.test(dniPadre.toString().trim())) {
+                    erroresFila.push(`DNI padre inválido: ${dniPadre}`);
+                }
+                if (dniMadre && !/^\d{8}$/.test(dniMadre.toString().trim())) {
+                    erroresFila.push(`DNI madre inválido: ${dniMadre}`);
+                }
+                if (dniApoderado && !/^\d{8}$/.test(dniApoderado.toString().trim())) {
+                    erroresFila.push(`DNI apoderado inválido: ${dniApoderado}`);
+                }
+
+                if (erroresFila.length > 0) {
+                    errores.push({ fila: numFila, errores: erroresFila, datos: fila });
+                } else {
+                    datosValidos.push({ fila: numFila, datos: fila });
+                }
+            });
+
+            return { datosValidos, errores };
+        }
+
+        // Función para mostrar la vista previa
+        function mostrarVistaPrevia(datosOriginales, datosValidos, errores) {
+            document.getElementById('seccionVistaPrevia').style.display = 'block';
+
+            // Resumen
+            document.getElementById('resumenImportacion').innerHTML = `
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="background: #d4edda; padding: 15px 25px; border-radius: 8px; flex: 1; min-width: 150px;">
+                        <div style="font-size: 28px; font-weight: bold; color: #155724;">${datosValidos.length}</div>
+                        <div style="color: #155724;">Registros válidos</div>
+                    </div>
+                    <div style="background: ${errores.length > 0 ? '#fff3cd' : '#e9ecef'}; padding: 15px 25px; border-radius: 8px; flex: 1; min-width: 150px;">
+                        <div style="font-size: 28px; font-weight: bold; color: ${errores.length > 0 ? '#856404' : '#6c757d'};">${errores.length}</div>
+                        <div style="color: ${errores.length > 0 ? '#856404' : '#6c757d'};">Con errores</div>
+                    </div>
+                    <div style="background: #e9ecef; padding: 15px 25px; border-radius: 8px; flex: 1; min-width: 150px;">
+                        <div style="font-size: 28px; font-weight: bold; color: #495057;">${datosOriginales.length}</div>
+                        <div style="color: #495057;">Total en archivo</div>
+                    </div>
+                </div>
+            `;
+
+            // Errores
+            if (errores.length > 0) {
+                document.getElementById('erroresImportacionContainer').style.display = 'block';
+                document.getElementById('listaErroresImportacion').innerHTML = errores.map(e => `
+                    <div style="background: white; padding: 10px; border-radius: 5px; margin-bottom: 5px;">
+                        <strong>Fila ${e.fila}:</strong> ${e.errores.join(', ')}
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('erroresImportacionContainer').style.display = 'none';
+            }
+
+            // Tabla de vista previa (primeras 10 filas válidas)
+            const datosMostrar = datosValidos.slice(0, 10);
+            const columnasImportantes = [
+                'ESTUDIANTE_GRADO',
+                'ESTUDIANTE_SECCION',
+                'ESTUDIANTE_NUMERO_DE_DOCUMENTO',
+                'ESTUDIANTE_APELLIDO_PATERNO',
+                'ESTUDIANTE_NOMBRES',
+                'PADRE_APELLIDOS_NOMBRES',
+                'MADRE_APELLIDOS_NOMBRES'
+            ];
+
+            // Encabezados
+            document.getElementById('encabezadoVistaPrevia').innerHTML = `
+                <tr>
+                    <th>#</th>
+                    ${columnasImportantes.map(col => `<th>${col.replace('ESTUDIANTE_', '').replace('PADRE_', 'P:').replace('MADRE_', 'M:')}</th>`).join('')}
+                </tr>
+            `;
+
+            // Cuerpo
+            document.getElementById('cuerpoVistaPrevia').innerHTML = datosMostrar.map(item => `
+                <tr>
+                    <td>${item.fila}</td>
+                    ${columnasImportantes.map(col => `<td>${item.datos[col] || '-'}</td>`).join('')}
+                </tr>
+            `).join('') + (datosValidos.length > 10 ? `
+                <tr style="background: #f5f5f5;">
+                    <td colspan="${columnasImportantes.length + 1}" style="text-align: center; padding: 15px; color: #666;">
+                        <i class="fas fa-info-circle"></i> Mostrando 10 de ${datosValidos.length} registros válidos
+                    </td>
+                </tr>
+            ` : '');
+
+            // Habilitar/deshabilitar botón de confirmar
+            document.getElementById('btnConfirmarImportacion').disabled = datosValidos.length === 0;
+        }
+
+        // Función para cancelar la importación
+        function cancelarImportacion() {
+            datosImportacionPendientes = [];
+            erroresImportacion = [];
+            document.getElementById('seccionVistaPrevia').style.display = 'none';
+            document.getElementById('archivoImportar').value = '';
+        }
+
+        // Función para ejecutar la importación a Supabase
+        async function ejecutarImportacion() {
+            if (datosImportacionPendientes.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin datos',
+                    text: 'No hay datos válidos para importar',
+                    confirmButtonColor: 'var(--color-ata-verde)'
+                });
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: '¿Confirmar importación?',
+                html: `
+                    <p>Se importarán <strong>${datosImportacionPendientes.length}</strong> registros.</p>
+                    <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px;">
+                        <i class="fas fa-info-circle"></i> Los nuevos usuarios se crearán con estado <strong>NO ACTIVADO</strong>
+                    </p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--color-ata-verde)',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-check"></i> Sí, importar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (!result.isConfirmed) return;
+
+            // Ocultar vista previa, mostrar progreso
+            document.getElementById('seccionVistaPrevia').style.display = 'none';
+            document.getElementById('seccionProgreso').style.display = 'block';
+
+            const total = datosImportacionPendientes.length;
+            let procesados = 0;
+            let exitos = 0;
+            let fallos = 0;
+            const erroresDetalle = [];
+
+            for (const item of datosImportacionPendientes) {
+                try {
+                    await importarRegistroASupabase(item.datos);
+                    exitos++;
+                } catch (error) {
+                    fallos++;
+                    erroresDetalle.push({ fila: item.fila, error: error.message });
+                }
+
+                procesados++;
+                const porcentaje = Math.round((procesados / total) * 100);
+                document.getElementById('barraProgresoImportacion').style.width = porcentaje + '%';
+                document.getElementById('textoProgresoImportacion').textContent =
+                    `Procesando ${procesados} de ${total} registros...`;
+            }
+
+            // Ocultar progreso
+            document.getElementById('seccionProgreso').style.display = 'none';
+
+            // Mostrar resultado
+            await Swal.fire({
+                icon: fallos === 0 ? 'success' : 'warning',
+                title: fallos === 0 ? '¡Importación Completada!' : 'Importación con errores',
+                html: `
+                    <div style="text-align: left; max-width: 300px; margin: 0 auto;">
+                        <p><i class="fas fa-check-circle" style="color: #28a745;"></i> Exitosos: <strong>${exitos}</strong></p>
+                        ${fallos > 0 ? `<p><i class="fas fa-times-circle" style="color: #dc3545;"></i> Fallidos: <strong>${fallos}</strong></p>` : ''}
+                    </div>
+                    ${erroresDetalle.length > 0 ? `
+                        <div style="max-height: 150px; overflow: auto; margin-top: 15px; text-align: left; font-size: 12px; background: #f8d7da; padding: 10px; border-radius: 5px;">
+                            ${erroresDetalle.map(e => `<div>Fila ${e.fila}: ${e.error}</div>`).join('')}
+                        </div>
+                    ` : ''}
+                `,
+                confirmButtonColor: 'var(--color-ata-verde)'
+            });
+
+            // Registrar acción
+            await registrarAccionAdmin('crear', `Importación masiva: ${exitos} registros importados`, 'Importación');
+
+            // Limpiar
+            cancelarImportacion();
+        }
+
+        // Función para importar un registro individual a Supabase
+        async function importarRegistroASupabase(datos) {
+            // Normalizar grado a número
+            const gradoMap = {
+                'PRIMERO': '1', 'SEGUNDO': '2', 'TERCERO': '3', 'CUARTO': '4', 'QUINTO': '5',
+                '1': '1', '2': '2', '3': '3', '4': '4', '5': '5'
+            };
+            const grado = gradoMap[(datos['ESTUDIANTE_GRADO'] || '').toString().toUpperCase().trim()] || '1';
+            const seccion = (datos['ESTUDIANTE_SECCION'] || 'A').toString().toUpperCase().trim();
+
+            const dniEstudiante = (datos['ESTUDIANTE_NUMERO_DE_DOCUMENTO'] || '').toString().trim();
+            const nombreEstudiante = [
+                datos['ESTUDIANTE_APELLIDO_PATERNO'],
+                datos['ESTUDIANTE_APELLIDO_MATERNO'],
+                datos['ESTUDIANTE_NOMBRES']
+            ].filter(Boolean).join(' ').toUpperCase().trim();
+
+            const sexo = (datos['ESTUDIANTE_SEXO'] || '').toString().toLowerCase().includes('mujer') ? 'F' : 'M';
+
+            // 1. Crear o encontrar estudiante
+            let estudianteId = null;
+
+            // Verificar si ya existe
+            const { data: estudianteExistente } = await supabase
+                .from('estudiantes')
+                .select('id')
+                .eq('dni', dniEstudiante)
+                .maybeSingle();
+
+            if (estudianteExistente) {
+                estudianteId = estudianteExistente.id;
+            } else {
+                // Crear estudiante
+                const { data: nuevoEstudiante, error: errorEst } = await supabase
+                    .from('estudiantes')
+                    .insert({
+                        dni: dniEstudiante,
+                        nombre_completo: nombreEstudiante,
+                        grado: grado,
+                        seccion: seccion,
+                        sexo: sexo,
+                        nivel: 'secundaria',
+                        activo: true
+                    })
+                    .select('id')
+                    .single();
+
+                if (errorEst) throw new Error(`Error creando estudiante: ${errorEst.message}`);
+                estudianteId = nuevoEstudiante.id;
+            }
+
+            // 2. Crear apoderados (padre, madre, apoderado)
+            const apoderados = [
+                { tipo: 'padre', nombre: datos['PADRE_APELLIDOS_NOMBRES'], dni: datos['PADRE_NUMERO_DE_DOCUMENTO'], tel: datos['PADRE_NUMERO_CELULAR'] },
+                { tipo: 'madre', nombre: datos['MADRE_APELLIDOS_NOMBRES'], dni: datos['MADRE_NUMERO_DE_DOCUMENTO'], tel: datos['MADRE_NUMERO_CELULAR'] },
+                { tipo: 'apoderado', nombre: datos['APODERADO_APELLIDOS_NOMBRES'], dni: datos['APODERADO_NUMERO_DE_DOCUMENTO'], tel: datos['APODERADO_NUMERO_CELULAR'] }
+            ];
+
+            for (const apoderado of apoderados) {
+                if (!apoderado.nombre || !apoderado.dni) continue;
+
+                const dniApoderado = apoderado.dni.toString().trim();
+
+                // Verificar si ya existe
+                const { data: userExistente } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('dni', dniApoderado)
+                    .maybeSingle();
+
+                let userId = null;
+
+                if (userExistente) {
+                    userId = userExistente.id;
+                } else {
+                    // Crear usuario (padre/madre/apoderado)
+                    const { data: nuevoUser, error: errorUser } = await supabase
+                        .from('users')
+                        .insert({
+                            dni: dniApoderado,
+                            nombre_completo: apoderado.nombre.toString().toUpperCase().trim(),
+                            telefono: apoderado.tel ? apoderado.tel.toString().trim() : null,
+                            role: 'padre',
+                            activado: false // MUY IMPORTANTE: usuario NO activado
+                        })
+                        .select('id')
+                        .single();
+
+                    if (errorUser) {
+                        console.warn(`Error creando ${apoderado.tipo}:`, errorUser.message);
+                        continue;
+                    }
+                    userId = nuevoUser.id;
+                }
+
+                // Vincular apoderado al estudiante
+                if (userId && estudianteId) {
+                    const campoFK = apoderado.tipo === 'padre' ? 'padre_id'
+                        : apoderado.tipo === 'madre' ? 'madre_id'
+                            : 'apoderado_id';
+
+                    await supabase
+                        .from('estudiantes')
+                        .update({ [campoFK]: userId })
+                        .eq('id', estudianteId);
+                }
+            }
+        }
+
+        // Función alternativa: mostrar importación en modal (fallback)
+        function mostrarModalImportacion() {
+            Swal.fire({
+                title: '<i class="fas fa-file-import"></i> Importación Masiva',
+                html: `
+                    <div style="text-align: left; padding: 10px;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h4 style="color: #667eea; margin-bottom: 10px;">
+                                <span style="background: #667eea; color: white; padding: 3px 10px; border-radius: 50%; margin-right: 8px;">1</span>
+                                Descargar Plantilla
+                            </h4>
+                            <button onclick="descargarPlantillaImportacion()" class="btn btn-primary" style="width: 100%;">
+                                <i class="fas fa-download"></i> Descargar Plantilla Excel
+                            </button>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <h4 style="color: #764ba2; margin-bottom: 10px;">
+                                <span style="background: #764ba2; color: white; padding: 3px 10px; border-radius: 50%; margin-right: 8px;">2</span>
+                                Subir Archivo
+                            </h4>
+                            <input type="file" id="archivoImportarModal" accept=".xlsx,.xls,.csv" 
+                                   onchange="procesarArchivoImportacion(this.files[0]); Swal.close();" 
+                                   style="width: 100%; padding: 10px; border: 2px dashed #ddd; border-radius: 5px;">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Cerrar',
+                width: '500px'
+            });
         }
 
         // ===== GESTIÓN DE USUARIOS =====
