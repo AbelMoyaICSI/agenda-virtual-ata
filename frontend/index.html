@@ -12490,9 +12490,17 @@
             }
 
             tbody.innerHTML = usuarios.map(user => {
-                // Determinar si la cuenta está activada
-                // Solo es activada si el campo 'activado' es explícitamente true
-                const cuentaActivada = user.activado === true;
+                // Determinar si la cuenta está CORRECTAMENTE activada
+                // Una cuenta está activada solo si cumple TODAS las condiciones:
+                // 1. El campo 'activado' es explícitamente true
+                // 2. Tiene password_hash (el usuario creó su contraseña)
+                // 3. Tiene email registrado
+                const tienePassword = user.password_hash && user.password_hash.trim().length > 0;
+                const tieneEmail = user.email && user.email.trim().length > 0;
+                const campoActivado = user.activado === true;
+
+                // Solo es ACTIVADA si completó todo el proceso
+                const cuentaActivada = campoActivado && tienePassword && tieneEmail;
 
                 return `
                 <tr onclick="toggleFilaUsuario(event, '${user.id}')" style="cursor: pointer;" class="fila-seleccionable">
@@ -16729,8 +16737,15 @@
                 let estadoCuenta = 'N/A';
                 let badgeCuenta = 'secondary';
                 if (apoderadoData) {
-                    // Solo es activada si el campo 'activado' es explícitamente true
-                    if (apoderadoData.activado === true) {
+                    // Una cuenta está CORRECTAMENTE activada solo si:
+                    // 1. activado = true
+                    // 2. Tiene password_hash (creó contraseña)
+                    // 3. Tiene email
+                    const tienePassword = apoderadoData.password_hash && apoderadoData.password_hash.trim().length > 0;
+                    const tieneEmail = apoderadoData.email && apoderadoData.email.trim().length > 0;
+                    const campoActivado = apoderadoData.activado === true;
+
+                    if (campoActivado && tienePassword && tieneEmail) {
                         estadoCuenta = '✓ Activada';
                         badgeCuenta = 'success';
                     } else {
