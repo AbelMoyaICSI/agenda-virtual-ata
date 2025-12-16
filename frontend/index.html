@@ -7805,45 +7805,17 @@
                                 <div style="background: #e8f5e9; padding: 15px; border-radius: 10px; margin-top: 15px;">
                                     <p style="margin: 0; color: #2e7d32; font-size: 14px;">
                                         <i class="fas fa-info-circle"></i> 
-                                        Ahora inicia sesión con tu nueva contraseña
+                                        La página se recargará para que puedas iniciar sesión.
                                     </p>
                                 </div>
                             </div>
                         `,
                             confirmButtonColor: '#006B3F',
-                            confirmButtonText: '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión'
+                            confirmButtonText: '<i class="fas fa-sync-alt"></i> Continuar'
                         });
 
-                        // Resetear TODOS los steps para volver al inicio limpio
-                        document.getElementById('step1').classList.remove('hidden');
-                        document.getElementById('step1').classList.add('visible');
-                        document.getElementById('step1').style.display = '';
-
-                        document.getElementById('step1b').classList.add('hidden');
-                        document.getElementById('step1b').classList.remove('visible');
-                        document.getElementById('step1b').style.display = 'none';
-
-                        document.getElementById('step2').classList.add('hidden');
-                        document.getElementById('step2').classList.remove('visible');
-                        document.getElementById('step2').style.display = 'none';
-
-                        document.getElementById('step3').classList.add('hidden');
-                        document.getElementById('step3').classList.remove('visible');
-                        document.getElementById('step3').style.display = 'none';
-
-                        document.getElementById('step4').classList.add('hidden');
-                        document.getElementById('step4').classList.remove('visible');
-                        document.getElementById('step4').style.display = 'none';
-
-                        if (document.getElementById('step4b')) {
-                            document.getElementById('step4b').style.display = 'none';
-                        }
-                        if (document.getElementById('step5')) {
-                            document.getElementById('step5').style.display = 'none';
-                        }
-
-                        // Mostrar pantalla de login con solo la selección de cuenta
-                        document.getElementById('loginScreen').style.display = 'flex';
+                        // Recargar la página para un estado completamente limpio
+                        window.location.href = window.location.pathname;
 
                     } catch (err) {
                         console.error('Error actualizando contraseña:', err);
