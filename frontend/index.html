@@ -7702,36 +7702,48 @@
                 console.log('📝 [RECOVERY] Abriendo SweetAlert modal AHORA...');
 
                 const result = await Swal.fire({
-                    title: '<i class="fas fa-key"></i> Restablecer Contraseña',
+                    title: '<i class="fas fa-lock-open" style="color: #006B3F;"></i> Nueva Contraseña',
                     html: `
-                    <div style="text-align: left; padding: 10px 0;">
-                        <p style="margin-bottom: 15px; color: #666;">
-                            <strong>Cuenta:</strong> ${email}
-                        </p>
-                        <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">
-                                Nueva Contraseña:
-                            </label>
-                            <input type="password" id="swal-password" class="swal2-input" 
-                                   placeholder="Mínimo 6 caracteres" 
-                                   style="width: 100%; margin: 0; box-sizing: border-box;">
+                    <div style="text-align: center; padding: 15px 0;">
+                        <div style="background: linear-gradient(135deg, #006B3F 0%, #00a86b 100%); 
+                                    padding: 12px 20px; 
+                                    border-radius: 25px; 
+                                    display: inline-block;
+                                    margin-bottom: 20px;">
+                            <span style="color: white; font-size: 14px;">
+                                <i class="fas fa-user"></i> ${email}
+                            </span>
                         </div>
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">
-                                Confirmar Contraseña:
-                            </label>
-                            <input type="password" id="swal-confirm-password" class="swal2-input" 
-                                   placeholder="Repite la contraseña" 
-                                   style="width: 100%; margin: 0; box-sizing: border-box;">
+                        
+                        <div style="text-align: left; max-width: 300px; margin: 0 auto;">
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px;">
+                                    <i class="fas fa-key" style="color: #006B3F;"></i> Nueva Contraseña
+                                </label>
+                                <input type="password" id="swal-password" class="swal2-input" 
+                                       placeholder="Mínimo 6 caracteres" 
+                                       style="width: 100%; margin: 0; box-sizing: border-box; border-radius: 10px; border: 2px solid #e0e0e0; padding: 12px 15px;">
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px;">
+                                    <i class="fas fa-check-double" style="color: #006B3F;"></i> Confirmar Contraseña
+                                </label>
+                                <input type="password" id="swal-confirm-password" class="swal2-input" 
+                                       placeholder="Repite la contraseña" 
+                                       style="width: 100%; margin: 0; box-sizing: border-box; border-radius: 10px; border: 2px solid #e0e0e0; padding: 12px 15px;">
+                            </div>
                         </div>
                     </div>
                 `,
-                    icon: 'info',
                     showCancelButton: false,
                     confirmButtonColor: '#006B3F',
-                    confirmButtonText: '<i class="fas fa-save"></i> Guardar Nueva Contraseña',
+                    confirmButtonText: '<i class="fas fa-save"></i> Guardar Contraseña',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
+                    customClass: {
+                        popup: 'swal2-popup-rounded',
+                        confirmButton: 'swal2-confirm-rounded'
+                    },
                     preConfirm: () => {
                         const password = document.getElementById('swal-password').value;
                         const confirmPassword = document.getElementById('swal-confirm-password').value;
@@ -7751,16 +7763,16 @@
                             return false;
                         }
 
-                        return { password };
+                        return { password, email };
                     }
                 });
 
                 if (result.isConfirmed && result.value) {
                     try {
-                        // Mostrar loading
+                        // Mostrar loading con animación
                         Swal.fire({
-                            title: 'Actualizando contraseña...',
-                            html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+                            title: 'Guardando...',
+                            html: '<div style="font-size: 50px; color: #006B3F;"><i class="fas fa-spinner fa-spin"></i></div><p style="margin-top: 15px; color: #666;">Actualizando tu contraseña</p>',
                             showConfirmButton: false,
                             allowOutsideClick: false
                         });
@@ -7777,21 +7789,60 @@
                         // Cerrar sesión de recuperación
                         await supabase.auth.signOut();
 
-                        // Mostrar éxito
+                        // Limpiar localStorage
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('isLoggedIn');
+
+                        // Mostrar éxito con animación
                         await Swal.fire({
                             icon: 'success',
-                            title: '¡Contraseña Actualizada!',
+                            title: '¡Listo!',
                             html: `
-                            <p>Tu contraseña ha sido cambiada exitosamente.</p>
-                            <p style="margin-top: 10px; color: #666;">
-                                <small>Ahora puedes iniciar sesión con tu nueva contraseña.</small>
-                            </p>
+                            <div style="text-align: center;">
+                                <p style="font-size: 16px; color: #333; margin-bottom: 10px;">
+                                    Tu contraseña ha sido actualizada correctamente.
+                                </p>
+                                <div style="background: #e8f5e9; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                                    <p style="margin: 0; color: #2e7d32; font-size: 14px;">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Ahora inicia sesión con tu nueva contraseña
+                                    </p>
+                                </div>
+                            </div>
                         `,
                             confirmButtonColor: '#006B3F',
-                            confirmButtonText: 'Ir al Inicio de Sesión'
+                            confirmButtonText: '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión'
                         });
 
-                        // Mostrar pantalla de login
+                        // Resetear TODOS los steps para volver al inicio limpio
+                        document.getElementById('step1').classList.remove('hidden');
+                        document.getElementById('step1').classList.add('visible');
+                        document.getElementById('step1').style.display = '';
+
+                        document.getElementById('step1b').classList.add('hidden');
+                        document.getElementById('step1b').classList.remove('visible');
+                        document.getElementById('step1b').style.display = 'none';
+
+                        document.getElementById('step2').classList.add('hidden');
+                        document.getElementById('step2').classList.remove('visible');
+                        document.getElementById('step2').style.display = 'none';
+
+                        document.getElementById('step3').classList.add('hidden');
+                        document.getElementById('step3').classList.remove('visible');
+                        document.getElementById('step3').style.display = 'none';
+
+                        document.getElementById('step4').classList.add('hidden');
+                        document.getElementById('step4').classList.remove('visible');
+                        document.getElementById('step4').style.display = 'none';
+
+                        if (document.getElementById('step4b')) {
+                            document.getElementById('step4b').style.display = 'none';
+                        }
+                        if (document.getElementById('step5')) {
+                            document.getElementById('step5').style.display = 'none';
+                        }
+
+                        // Mostrar pantalla de login con solo la selección de cuenta
                         document.getElementById('loginScreen').style.display = 'flex';
 
                     } catch (err) {
