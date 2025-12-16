@@ -7675,19 +7675,31 @@
         // Se muestra cuando el usuario viene desde el enlace de recuperación
         // =========================================================================
         async function mostrarModalCambioPassword(email) {
-            console.log('📝 Mostrando modal de cambio de contraseña para:', email);
+            console.log('📝 [RECOVERY] Iniciando mostrarModalCambioPassword para:', email);
 
             try {
+                // Verificar que SweetAlert2 esté disponible
+                if (typeof Swal === 'undefined') {
+                    console.error('❌ [RECOVERY] SweetAlert2 no está cargado!');
+                    alert('Error: La librería de alertas no está cargada. Por favor recarga la página.');
+                    return;
+                }
+                console.log('✅ [RECOVERY] SweetAlert2 está disponible');
+
                 // Esperar un momento para asegurar que todo esté cargado
+                console.log('⏳ [RECOVERY] Esperando 500ms...');
                 await new Promise(resolve => setTimeout(resolve, 500));
+                console.log('✅ [RECOVERY] Espera completada');
 
                 // Mostrar la pantalla de login como fondo (para que Swal se vea bien)
                 const loginScreen = document.getElementById('loginScreen');
+                console.log('📝 [RECOVERY] loginScreen encontrado:', !!loginScreen);
                 if (loginScreen) {
                     loginScreen.style.display = 'flex';
+                    console.log('✅ [RECOVERY] loginScreen.style.display = flex');
                 }
 
-                console.log('📝 Abriendo SweetAlert modal...');
+                console.log('📝 [RECOVERY] Abriendo SweetAlert modal AHORA...');
 
                 const result = await Swal.fire({
                     title: '<i class="fas fa-key"></i> Restablecer Contraseña',
