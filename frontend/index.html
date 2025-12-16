@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 
 <head>
@@ -11729,80 +11729,111 @@
 
         // Función para descargar la plantilla de importación
         function descargarPlantillaImportacion() {
-            // Definir las columnas según el formato original
+            // Definir las 38 columnas EXACTAS del formato CSV original
             const columnas = [
+                'ITEM',
                 'ESTUDIANTE_GRADO',
                 'ESTUDIANTE_SECCION',
+                'ESTUDIANTE_TIPO_DOCUMENTO',
                 'ESTUDIANTE_NUMERO_DE_DOCUMENTO',
+                'ESTUDIANTE_ESTADO_EMISION',
+                'ESTUDIANTE_CODIGO_MODULAR',
                 'ESTUDIANTE_APELLIDO_PATERNO',
                 'ESTUDIANTE_APELLIDO_MATERNO',
                 'ESTUDIANTE_NOMBRES',
                 'ESTUDIANTE_SEXO',
                 'ESTUDIANTE_FECHA_DE_NACIMIENTO',
+                'ESTUDIANTE_EDAD_AL_31_DE_MARZO',
+                'ESTUDIANTE_TIPO_MATRICULA',
                 'PADRE_APELLIDOS_NOMBRES',
-                'PADRE_TIPO_DOCUMENTO',
-                'PADRE_NUMERO_DE_DOCUMENTO',
                 'PADRE_SEXO',
                 'PADRE_PARENTESCO',
+                'PADRE_TIPO_DOCUMENTO',
+                'PADRE_NUMERO_DE_DOCUMENTO',
+                'PADRE_ESTADO_EMISION',
+                'PADRE_EMAIL',
                 'PADRE_NUMERO_CELULAR',
                 'MADRE_APELLIDOS_NOMBRES',
-                'MADRE_TIPO_DOCUMENTO',
-                'MADRE_NUMERO_DE_DOCUMENTO',
                 'MADRE_SEXO',
                 'MADRE_PARENTESCO',
+                'MADRE_TIPO_DOCUMENTO',
+                'MADRE_NUMERO_DE_DOCUMENTO',
+                'MADRE_ESTADO_EMISION',
+                'MADRE_EMAIL',
                 'MADRE_NUMERO_CELULAR',
                 'APODERADO_APELLIDOS_NOMBRES',
-                'APODERADO_TIPO_DOCUMENTO',
-                'APODERADO_NUMERO_DE_DOCUMENTO',
                 'APODERADO_SEXO',
                 'APODERADO_PARENTESCO',
+                'APODERADO_TIPO_DOCUMENTO',
+                'APODERADO_NUMERO_DE_DOCUMENTO',
+                'APODERADO_ESTADO_EMISION',
+                'APODERADO_EMAIL',
                 'APODERADO_NUMERO_CELULAR'
             ];
 
-            // Ejemplo de datos para mostrar el formato
-            const ejemplos = [
-                {
-                    'ESTUDIANTE_GRADO': 'PRIMERO',
-                    'ESTUDIANTE_SECCION': 'A',
-                    'ESTUDIANTE_NUMERO_DE_DOCUMENTO': '77927245',
-                    'ESTUDIANTE_APELLIDO_PATERNO': 'GARCIA',
-                    'ESTUDIANTE_APELLIDO_MATERNO': 'LOPEZ',
-                    'ESTUDIANTE_NOMBRES': 'MARIA FERNANDA',
-                    'ESTUDIANTE_SEXO': 'Mujer',
-                    'ESTUDIANTE_FECHA_DE_NACIMIENTO': '2010-05-15',
-                    'PADRE_APELLIDOS_NOMBRES': 'GARCIA MENDOZA JUAN CARLOS',
-                    'PADRE_TIPO_DOCUMENTO': 'DNI',
-                    'PADRE_NUMERO_DE_DOCUMENTO': '18201299',
-                    'PADRE_SEXO': 'Hombre',
-                    'PADRE_PARENTESCO': 'PADRE',
-                    'PADRE_NUMERO_CELULAR': '948528485',
-                    'MADRE_APELLIDOS_NOMBRES': 'LOPEZ CHAVEZ ANA MARIA',
-                    'MADRE_TIPO_DOCUMENTO': 'DNI',
-                    'MADRE_NUMERO_DE_DOCUMENTO': '18153327',
-                    'MADRE_SEXO': 'Mujer',
-                    'MADRE_PARENTESCO': 'MADRE',
-                    'MADRE_NUMERO_CELULAR': '976543210',
-                    'APODERADO_APELLIDOS_NOMBRES': '',
-                    'APODERADO_TIPO_DOCUMENTO': '',
-                    'APODERADO_NUMERO_DE_DOCUMENTO': '',
-                    'APODERADO_SEXO': '',
-                    'APODERADO_PARENTESCO': '',
-                    'APODERADO_NUMERO_CELULAR': ''
-                }
-            ];
+            // Crear fila vacía (sin datos de ejemplo)
+            const filaVacia = {};
+            columnas.forEach(col => { filaVacia[col] = ''; });
 
             // Crear workbook
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(ejemplos, { header: columnas });
+            const ws = XLSX.utils.json_to_sheet([filaVacia], { header: columnas });
 
             // Ajustar ancho de columnas
-            ws['!cols'] = columnas.map(col => ({ wch: col.length + 5 }));
+            ws['!cols'] = columnas.map(col => ({ wch: Math.max(col.length + 2, 15) }));
 
-            XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
+            // Definir colores por categoría (colores en formato ARGB)
+            const colores = {
+                'ITEM': 'CCCCCC',           // Gris
+                'ESTUDIANTE': '90EE90',     // Verde claro
+                'PADRE': '87CEEB',          // Azul cielo
+                'MADRE': 'FFB6C1',          // Rosa claro
+                'APODERADO': 'FFDAB9'       // Melocotón/Naranja claro
+            };
+
+            // Aplicar estilos a los encabezados (fila 1)
+            columnas.forEach((col, index) => {
+                const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
+                if (!ws[cellRef]) ws[cellRef] = { v: col, t: 's' };
+
+                // Determinar categoría
+                let categoria = 'ITEM';
+                if (col.startsWith('ESTUDIANTE_')) categoria = 'ESTUDIANTE';
+                else if (col.startsWith('PADRE_')) categoria = 'PADRE';
+                else if (col.startsWith('MADRE_')) categoria = 'MADRE';
+                else if (col.startsWith('APODERADO_')) categoria = 'APODERADO';
+
+                // Aplicar estilo (SheetJS Community no soporta estilos, pero dejamos el código listo)
+                ws[cellRef].s = {
+                    fill: { fgColor: { rgb: colores[categoria] } },
+                    font: { bold: true },
+                    alignment: { horizontal: 'center' }
+                };
+            });
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Plantilla_Importacion');
 
             // Descargar
             XLSX.writeFile(wb, 'plantilla_importacion_ata.xlsx');
-            mostrarNotificacion('Plantilla descargada correctamente', 'success');
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Plantilla descargada!',
+                html: `
+                    <div style="text-align: left; font-size: 14px;">
+                        <p><strong>La plantilla incluye 38 columnas:</strong></p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                            <span style="background: #CCCCCC; padding: 5px 10px; border-radius: 5px;">ITEM</span>
+                            <span style="background: #90EE90; padding: 5px 10px; border-radius: 5px;">ESTUDIANTE (13 cols)</span>
+                            <span style="background: #87CEEB; padding: 5px 10px; border-radius: 5px;">PADRE (8 cols)</span>
+                            <span style="background: #FFB6C1; padding: 5px 10px; border-radius: 5px;">MADRE (8 cols)</span>
+                            <span style="background: #FFDAB9; padding: 5px 10px; border-radius: 5px;">APODERADO (8 cols)</span>
+                        </div>
+                        <p style="margin-top: 15px; color: #666;"><i class="fas fa-info-circle"></i> Complete los datos y suba el archivo para importar.</p>
+                    </div>
+                `,
+                confirmButtonColor: 'var(--color-ata-verde)'
+            });
         }
 
         // Función para procesar el archivo subido
@@ -12138,6 +12169,18 @@
                 estudianteId = estudianteExistente.id;
             } else {
                 // Crear estudiante
+                // Parsear fecha de nacimiento
+                let fechaNacimiento = null;
+                const fechaRaw = datos['ESTUDIANTE_FECHA_DE_NACIMIENTO'];
+                if (fechaRaw) {
+                    // Puede venir como YYYY-MM-DD o DD/MM/YYYY
+                    fechaNacimiento = fechaRaw.toString().trim();
+                }
+
+                // Obtener edad al 31 de marzo
+                const edadRaw = datos['ESTUDIANTE_EDAD_AL_31_DE_MARZO'];
+                const edad = edadRaw ? parseInt(edadRaw) : null;
+
                 const { data: nuevoEstudiante, error: errorEst } = await supabase
                     .from('estudiantes')
                     .insert({
@@ -12147,6 +12190,8 @@
                         seccion: seccion,
                         sexo: sexo,
                         nivel: 'secundaria',
+                        fecha_nacimiento: fechaNacimiento,
+                        edad_al_31_marzo: edad,
                         activo: true
                     })
                     .select('id')
@@ -12158,9 +12203,9 @@
 
             // 2. Crear apoderados (padre, madre, apoderado)
             const apoderados = [
-                { tipo: 'padre', nombre: datos['PADRE_APELLIDOS_NOMBRES'], dni: datos['PADRE_NUMERO_DE_DOCUMENTO'], tel: datos['PADRE_NUMERO_CELULAR'] },
-                { tipo: 'madre', nombre: datos['MADRE_APELLIDOS_NOMBRES'], dni: datos['MADRE_NUMERO_DE_DOCUMENTO'], tel: datos['MADRE_NUMERO_CELULAR'] },
-                { tipo: 'apoderado', nombre: datos['APODERADO_APELLIDOS_NOMBRES'], dni: datos['APODERADO_NUMERO_DE_DOCUMENTO'], tel: datos['APODERADO_NUMERO_CELULAR'] }
+                { tipo: 'padre', nombre: datos['PADRE_APELLIDOS_NOMBRES'], dni: datos['PADRE_NUMERO_DE_DOCUMENTO'], tel: datos['PADRE_NUMERO_CELULAR'], email: datos['PADRE_EMAIL'] },
+                { tipo: 'madre', nombre: datos['MADRE_APELLIDOS_NOMBRES'], dni: datos['MADRE_NUMERO_DE_DOCUMENTO'], tel: datos['MADRE_NUMERO_CELULAR'], email: datos['MADRE_EMAIL'] },
+                { tipo: 'apoderado', nombre: datos['APODERADO_APELLIDOS_NOMBRES'], dni: datos['APODERADO_NUMERO_DE_DOCUMENTO'], tel: datos['APODERADO_NUMERO_CELULAR'], email: datos['APODERADO_EMAIL'] }
             ];
 
             for (const apoderado of apoderados) {
@@ -12187,6 +12232,7 @@
                             dni: dniApoderado,
                             nombre_completo: apoderado.nombre.toString().toUpperCase().trim(),
                             telefono: apoderado.tel ? apoderado.tel.toString().trim() : null,
+                            email: apoderado.email ? apoderado.email.toString().trim().toLowerCase() : null,
                             role: 'padre',
                             activado: false // MUY IMPORTANTE: usuario NO activado
                         })
