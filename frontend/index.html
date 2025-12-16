@@ -11631,11 +11631,16 @@
                                 <p style="color: #666; margin-bottom: 15px;">
                                     Descarga la plantilla Excel con el formato correcto para importar estudiantes y apoderados.
                                 </p>
-                                <button onclick="descargarPlantillaImportacion()" class="btn btn-primary" style="width: 100%;">
-                                    <i class="fas fa-download"></i> Descargar Plantilla Excel
-                                </button>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button onclick="descargarPlantillaImportacion()" class="btn btn-primary" style="flex: 1;">
+                                        <i class="fas fa-file-excel"></i> Plantilla Vacía
+                                    </button>
+                                    <button onclick="descargarEjemploImportacion()" class="btn btn-success" style="flex: 1;">
+                                        <i class="fas fa-table"></i> Descargar Ejemplo
+                                    </button>
+                                </div>
                                 <small style="display: block; margin-top: 10px; color: #888;">
-                                    <i class="fas fa-info-circle"></i> Llena la plantilla con los datos de estudiantes y sus apoderados
+                                    <i class="fas fa-info-circle"></i> El ejemplo tiene datos de muestra con colores por categoría
                                 </small>
                             </div>
 
@@ -11830,6 +11835,166 @@
                             <span style="background: #FFDAB9; padding: 5px 10px; border-radius: 5px;">APODERADO (8 cols)</span>
                         </div>
                         <p style="margin-top: 15px; color: #666;"><i class="fas fa-info-circle"></i> Complete los datos y suba el archivo para importar.</p>
+                    </div>
+                `,
+                confirmButtonColor: 'var(--color-ata-verde)'
+            });
+        }
+
+        // Función para descargar ejemplo con datos de muestra
+        function descargarEjemploImportacion() {
+            // Definir las 38 columnas EXACTAS
+            const columnas = [
+                'ITEM',
+                'ESTUDIANTE_GRADO',
+                'ESTUDIANTE_SECCION',
+                'ESTUDIANTE_TIPO_DOCUMENTO',
+                'ESTUDIANTE_NUMERO_DE_DOCUMENTO',
+                'ESTUDIANTE_ESTADO_EMISION',
+                'ESTUDIANTE_CODIGO_MODULAR',
+                'ESTUDIANTE_APELLIDO_PATERNO',
+                'ESTUDIANTE_APELLIDO_MATERNO',
+                'ESTUDIANTE_NOMBRES',
+                'ESTUDIANTE_SEXO',
+                'ESTUDIANTE_FECHA_DE_NACIMIENTO',
+                'ESTUDIANTE_EDAD_AL_31_DE_MARZO',
+                'ESTUDIANTE_TIPO_MATRICULA',
+                'PADRE_APELLIDOS_NOMBRES',
+                'PADRE_SEXO',
+                'PADRE_PARENTESCO',
+                'PADRE_TIPO_DOCUMENTO',
+                'PADRE_NUMERO_DE_DOCUMENTO',
+                'PADRE_ESTADO_EMISION',
+                'PADRE_EMAIL',
+                'PADRE_NUMERO_CELULAR',
+                'MADRE_APELLIDOS_NOMBRES',
+                'MADRE_SEXO',
+                'MADRE_PARENTESCO',
+                'MADRE_TIPO_DOCUMENTO',
+                'MADRE_NUMERO_DE_DOCUMENTO',
+                'MADRE_ESTADO_EMISION',
+                'MADRE_EMAIL',
+                'MADRE_NUMERO_CELULAR',
+                'APODERADO_APELLIDOS_NOMBRES',
+                'APODERADO_SEXO',
+                'APODERADO_PARENTESCO',
+                'APODERADO_TIPO_DOCUMENTO',
+                'APODERADO_NUMERO_DE_DOCUMENTO',
+                'APODERADO_ESTADO_EMISION',
+                'APODERADO_EMAIL',
+                'APODERADO_NUMERO_CELULAR'
+            ];
+
+            // Datos de ejemplo (2 registros completos)
+            const ejemplos = [
+                {
+                    'ITEM': '1',
+                    'ESTUDIANTE_GRADO': 'PRIMERO',
+                    'ESTUDIANTE_SECCION': 'A',
+                    'ESTUDIANTE_TIPO_DOCUMENTO': 'DNI',
+                    'ESTUDIANTE_NUMERO_DE_DOCUMENTO': '77927245',
+                    'ESTUDIANTE_ESTADO_EMISION': 'VALIDADO',
+                    'ESTUDIANTE_CODIGO_MODULAR': '77927245',
+                    'ESTUDIANTE_APELLIDO_PATERNO': 'ALAYO',
+                    'ESTUDIANTE_APELLIDO_MATERNO': 'SALINAS',
+                    'ESTUDIANTE_NOMBRES': 'DIEGO SEBASTIAN',
+                    'ESTUDIANTE_SEXO': 'Hombre',
+                    'ESTUDIANTE_FECHA_DE_NACIMIENTO': '2012-12-18',
+                    'ESTUDIANTE_EDAD_AL_31_DE_MARZO': '12',
+                    'ESTUDIANTE_TIPO_MATRICULA': 'DEFINITIVA',
+                    'PADRE_APELLIDOS_NOMBRES': 'ALAYO ZURITA WILLIAN ENRIQUE',
+                    'PADRE_SEXO': 'Hombre',
+                    'PADRE_PARENTESCO': 'PADRE',
+                    'PADRE_TIPO_DOCUMENTO': 'DNI',
+                    'PADRE_NUMERO_DE_DOCUMENTO': '18201299',
+                    'PADRE_ESTADO_EMISION': 'VALIDADO',
+                    'PADRE_EMAIL': '',
+                    'PADRE_NUMERO_CELULAR': '948528485',
+                    'MADRE_APELLIDOS_NOMBRES': 'SALINAS CHAVEZ CONSUELO',
+                    'MADRE_SEXO': 'Mujer',
+                    'MADRE_PARENTESCO': 'MADRE',
+                    'MADRE_TIPO_DOCUMENTO': 'DNI',
+                    'MADRE_NUMERO_DE_DOCUMENTO': '18153327',
+                    'MADRE_ESTADO_EMISION': 'VALIDADO',
+                    'MADRE_EMAIL': '',
+                    'MADRE_NUMERO_CELULAR': '932753487',
+                    'APODERADO_APELLIDOS_NOMBRES': 'SALINAS CHAVEZ CONSUELO',
+                    'APODERADO_SEXO': 'Mujer',
+                    'APODERADO_PARENTESCO': 'MADRE',
+                    'APODERADO_TIPO_DOCUMENTO': 'DNI',
+                    'APODERADO_NUMERO_DE_DOCUMENTO': '18153327',
+                    'APODERADO_ESTADO_EMISION': 'VALIDADO',
+                    'APODERADO_EMAIL': '',
+                    'APODERADO_NUMERO_CELULAR': '932753487'
+                },
+                {
+                    'ITEM': '2',
+                    'ESTUDIANTE_GRADO': 'SEGUNDO',
+                    'ESTUDIANTE_SECCION': 'B',
+                    'ESTUDIANTE_TIPO_DOCUMENTO': 'DNI',
+                    'ESTUDIANTE_NUMERO_DE_DOCUMENTO': '78234567',
+                    'ESTUDIANTE_ESTADO_EMISION': 'VALIDADO',
+                    'ESTUDIANTE_CODIGO_MODULAR': '78234567',
+                    'ESTUDIANTE_APELLIDO_PATERNO': 'GARCIA',
+                    'ESTUDIANTE_APELLIDO_MATERNO': 'LOPEZ',
+                    'ESTUDIANTE_NOMBRES': 'MARIA FERNANDA',
+                    'ESTUDIANTE_SEXO': 'Mujer',
+                    'ESTUDIANTE_FECHA_DE_NACIMIENTO': '2011-05-15',
+                    'ESTUDIANTE_EDAD_AL_31_DE_MARZO': '13',
+                    'ESTUDIANTE_TIPO_MATRICULA': 'DEFINITIVA',
+                    'PADRE_APELLIDOS_NOMBRES': 'GARCIA MENDOZA JUAN CARLOS',
+                    'PADRE_SEXO': 'Hombre',
+                    'PADRE_PARENTESCO': 'PADRE',
+                    'PADRE_TIPO_DOCUMENTO': 'DNI',
+                    'PADRE_NUMERO_DE_DOCUMENTO': '18456789',
+                    'PADRE_ESTADO_EMISION': 'VALIDADO',
+                    'PADRE_EMAIL': 'jgarcia@email.com',
+                    'PADRE_NUMERO_CELULAR': '976543210',
+                    'MADRE_APELLIDOS_NOMBRES': 'LOPEZ CHAVEZ ANA MARIA',
+                    'MADRE_SEXO': 'Mujer',
+                    'MADRE_PARENTESCO': 'MADRE',
+                    'MADRE_TIPO_DOCUMENTO': 'DNI',
+                    'MADRE_NUMERO_DE_DOCUMENTO': '18765432',
+                    'MADRE_ESTADO_EMISION': 'VALIDADO',
+                    'MADRE_EMAIL': 'alopez@email.com',
+                    'MADRE_NUMERO_CELULAR': '965432178',
+                    'APODERADO_APELLIDOS_NOMBRES': '',
+                    'APODERADO_SEXO': '',
+                    'APODERADO_PARENTESCO': '',
+                    'APODERADO_TIPO_DOCUMENTO': '',
+                    'APODERADO_NUMERO_DE_DOCUMENTO': '',
+                    'APODERADO_ESTADO_EMISION': '',
+                    'APODERADO_EMAIL': '',
+                    'APODERADO_NUMERO_CELULAR': ''
+                }
+            ];
+
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(ejemplos, { header: columnas });
+
+            // Ajustar ancho de columnas
+            ws['!cols'] = columnas.map(col => ({ wch: Math.max(col.length + 2, 20) }));
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Ejemplo_Importacion');
+
+            // Descargar
+            XLSX.writeFile(wb, 'ejemplo_importacion_ata.xlsx');
+
+            Swal.fire({
+                icon: 'info',
+                title: '¡Ejemplo descargado!',
+                html: `
+                    <div style="text-align: left; font-size: 14px;">
+                        <p><strong>El archivo contiene 2 registros de ejemplo:</strong></p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                            <span style="background: #CCCCCC; padding: 5px 10px; border-radius: 5px;">🔘 ITEM</span>
+                            <span style="background: #90EE90; padding: 5px 10px; border-radius: 5px;">🟢 ESTUDIANTE</span>
+                            <span style="background: #87CEEB; padding: 5px 10px; border-radius: 5px;">🔵 PADRE</span>
+                            <span style="background: #FFB6C1; padding: 5px 10px; border-radius: 5px;">🩷 MADRE</span>
+                            <span style="background: #FFDAB9; padding: 5px 10px; border-radius: 5px;">🟠 APODERADO</span>
+                        </div>
+                        <p style="margin-top: 15px; color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> <strong>NO use este archivo para importar.</strong> Solo es de referencia.</p>
                     </div>
                 `,
                 confirmButtonColor: 'var(--color-ata-verde)'
