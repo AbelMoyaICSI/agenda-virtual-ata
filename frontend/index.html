@@ -8102,7 +8102,7 @@
                         window.history.replaceState(null, '', window.location.pathname);
 
                         // Obtener el email del usuario
-                        const userEmail = session.user?.email || 'tu cuenta';
+                        const userEmail = data.session?.user?.email || 'tu cuenta';
                         console.log('📝 [RECOVERY] Email del usuario:', userEmail);
 
                         // Esperar a que SweetAlert2 esté disponible
