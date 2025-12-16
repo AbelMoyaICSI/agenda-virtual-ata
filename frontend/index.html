@@ -3965,9 +3965,14 @@
                         </div>
 
                         <div class="card" style="margin-top: 20px;">
-                            <h3><i class="fas fa-history"></i> Actividad Reciente del Sistema</h3>
-                            <div id="adminActividadReciente" style="max-height: 300px; overflow-y: auto;">
-                                <p style="color: #666;">Cargando actividad...</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                                <h3 style="margin: 0;"><i class="fas fa-history"></i> Actividad Reciente del Sistema</h3>
+                                <input type="text" id="filtroActividadNombre" placeholder="Buscar por nombre..." 
+                                       oninput="filtrarActividadReciente()" class="form-control" 
+                                       style="max-width: 200px; height: 36px; font-size: 13px;">
+                            </div>
+                            <div id="adminActividadReciente" style="max-height: 350px; overflow-y: auto;">
+                                <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando actividad...</p>
                             </div>
                         </div>
                     </div>
@@ -11200,39 +11205,153 @@
                     </div>
                 `;
 
-                // Actividad reciente
-                const actividadReciente = [...(usuarios || []), ...(incidencias || [])]
-                    .map(item => ({
-                        ...item,
-                        timestamp: new Date(item.created_at || item.fecha)
-                    }))
-                    .sort((a, b) => b.timestamp - a.timestamp)
-                    .slice(0, 10);
-
-                let htmlActividad = '';
-                actividadReciente.forEach(item => {
-                    const esUsuario = item.role !== undefined;
-                    const clase = esUsuario ? 'usuario' : (item.tipo === 'merito' ? 'merito' : 'incidencia');
-                    const icono = esUsuario ? 'fa-user-plus' : (item.tipo === 'merito' ? 'fa-star' : 'fa-exclamation-triangle');
-                    const texto = esUsuario
-                        ? `Nuevo usuario registrado: ${item.role}`
-                        : `Nueva ${item.tipo === 'merito' ? 'mérito' : 'incidencia'} registrada`;
-
-                    htmlActividad += `
-                        <div class="actividad-item ${clase}">
-                            <div>
-                                <i class="fas ${icono}"></i> ${texto}
-                            </div>
-                            <div class="actividad-fecha">${item.timestamp.toLocaleDateString()}</div>
-                        </div>
-                    `;
+                // Actividad reciente - MEJORADA
+                // Cargar usuarios con más detalles
+                const { data: usuariosDetalle, error: errorUsrDet } = await supabase
+                    .from('users')
+                    .select('id, nombre_completo, role, created_at, email')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                // Cargar incidencias con quién las registró
+                const { data: incidenciasDetalle, error: errorIncDet } = await supabase
+                    .from('incidencias')
+                    .select(`
+                        id, tipo, fecha, created_at, descripcion,
+                        estudiante:estudiantes(nombre_completo),
+                        registrado_por:users(nombre_completo)
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                // Combinar y ordenar actividad
+                const actividadCombinada = [];
+                
+                // Agregar usuarios registrados
+                (usuariosDetalle || []).forEach(u => {
+                    actividadCombinada.push({
+                        tipo_actividad: 'usuario_nuevo',
+                        nombre: u.nombre_completo || u.email || 'Sin nombre',
+                        rol: u.role,
+                        timestamp: new Date(u.created_at),
+                        detalle: `Nuevo usuario registrado (${u.role})`
+                    });
                 });
-                document.getElementById('adminActividadReciente').innerHTML = htmlActividad || '<div class="empty-state"><i class="fas fa-inbox"></i><p>No hay actividad reciente</p></div>';
+                
+                // Agregar incidencias
+                (incidenciasDetalle || []).forEach(inc => {
+                    const nombreEstudiante = inc.estudiante?.nombre_completo || 'Estudiante';
+                    const nombreRegistrador = inc.registrado_por?.nombre_completo || 'Sistema';
+                    actividadCombinada.push({
+                        tipo_actividad: inc.tipo === 'merito' ? 'merito' : 'incidencia',
+                        nombre: nombreEstudiante,
+                        rol: 'incidencia',
+                        registrado_por: nombreRegistrador,
+                        timestamp: new Date(inc.fecha || inc.created_at),
+                        detalle: inc.tipo === 'merito' ? 'Mérito registrado' : 'Demérito registrado',
+                        descripcion: inc.descripcion
+                    });
+                });
+                
+                // Ordenar por fecha más reciente
+                actividadCombinada.sort((a, b) => b.timestamp - a.timestamp);
+                
+                // Guardar globalmente para filtros
+                window.actividadRecienteData = actividadCombinada.slice(0, 30);
+                
+                // Renderizar con filtro
+                renderizarActividadReciente(window.actividadRecienteData);
 
             } catch (error) {
                 console.error('Error cargando dashboard admin:', error);
                 mostrarNotificacion('Error al cargar el dashboard', 'error');
             }
+        }
+        
+        // Función para renderizar actividad reciente con filtro
+        function renderizarActividadReciente(actividades, filtro = '') {
+            const container = document.getElementById('adminActividadReciente');
+            if (!container) return;
+            
+            // Filtrar si hay texto de búsqueda
+            let actividadesFiltradas = actividades;
+            if (filtro.trim()) {
+                const filtroLower = filtro.toLowerCase();
+                actividadesFiltradas = actividades.filter(a => 
+                    (a.nombre && a.nombre.toLowerCase().includes(filtroLower)) ||
+                    (a.registrado_por && a.registrado_por.toLowerCase().includes(filtroLower)) ||
+                    (a.detalle && a.detalle.toLowerCase().includes(filtroLower))
+                );
+            }
+            
+            if (actividadesFiltradas.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="padding: 30px; text-align: center;">
+                        <i class="fas fa-inbox" style="font-size: 32px; color: #ccc;"></i>
+                        <p style="color: #666; margin-top: 10px;">${filtro ? 'Sin resultados para "' + filtro + '"' : 'No hay actividad reciente'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const nombresRoles = {
+                'admin': 'Administrador',
+                'direccion': 'Dirección',
+                'toe': 'TOE',
+                'docente': 'Docente',
+                'tutor': 'Tutor',
+                'auxiliar': 'Auxiliar',
+                'padre': 'Padre/Madre/Apoderado'
+            };
+            
+            let html = '';
+            actividadesFiltradas.slice(0, 15).forEach(item => {
+                let icono, color, texto, subtexto;
+                
+                if (item.tipo_actividad === 'usuario_nuevo') {
+                    icono = 'fa-user-plus';
+                    color = '#4facfe';
+                    texto = `<strong>${item.nombre}</strong>`;
+                    subtexto = `Nuevo ${nombresRoles[item.rol] || item.rol} registrado`;
+                } else if (item.tipo_actividad === 'merito') {
+                    icono = 'fa-star';
+                    color = 'var(--color-ata-dorado)';
+                    texto = `<strong>${item.nombre}</strong> recibió mérito`;
+                    subtexto = `Registrado por: <strong>${item.registrado_por}</strong>`;
+                } else {
+                    icono = 'fa-exclamation-triangle';
+                    color = 'var(--color-ata-rojo)';
+                    texto = `<strong>${item.nombre}</strong> recibió demérito`;
+                    subtexto = `Registrado por: <strong>${item.registrado_por}</strong>`;
+                }
+                
+                const fechaFormato = item.timestamp.toLocaleDateString('es-PE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                
+                html += `
+                    <div class="actividad-item" style="border-left: 3px solid ${color};">
+                        <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <i class="fas ${icono}" style="color: ${color}; font-size: 16px; margin-top: 3px;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-size: 14px;">${texto}</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 2px;">${subtexto}</div>
+                            </div>
+                            <div class="actividad-fecha" style="font-size: 12px; color: #999; white-space: nowrap;">${fechaFormato}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Función de filtro para actividad
+        function filtrarActividadReciente() {
+            const filtro = document.getElementById('filtroActividadNombre')?.value || '';
+            renderizarActividadReciente(window.actividadRecienteData || [], filtro);
         }
 
         // ===== GESTIÓN DE USUARIOS =====
