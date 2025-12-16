@@ -3909,6 +3909,11 @@
                             id="tabAdminExportar">
                             <i class="fas fa-file-export"></i> Exportar
                         </button>
+                        <button class="btn btn-secondary admin-tab-btn" onclick="showAdminTab('administradores')"
+                            id="tabAdminAdministradores"
+                            style="background: linear-gradient(135deg, #f39c12, #e74c3c); border: none;">
+                            <i class="fas fa-user-shield"></i> Administradores
+                        </button>
                         <button class="btn btn-secondary admin-tab-btn" onclick="showAdminTab('soporte')"
                             id="tabAdminSoporte">
                             <i class="fas fa-envelope"></i> Soporte <span id="badgeSoporte" class="admin-badge"
@@ -4290,6 +4295,58 @@
                             <button class="btn btn-warning" onclick="exportarBackupCompleto()">
                                 <i class="fas fa-save"></i> Descargar Backup Completo (JSON)
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB: Gestión de Administradores -->
+                    <div id="adminTabAdministradores" class="admin-tab-content" style="display: none;">
+                        <div class="card">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <h3 style="margin: 0;"><i class="fas fa-user-shield" style="color: #e74c3c;"></i>
+                                        Gestión de Administradores</h3>
+                                    <p style="color: #666; margin: 5px 0 0 0;">Usuarios con privilegios completos del
+                                        sistema</p>
+                                </div>
+                                <button class="btn btn-primary" onclick="mostrarModalCrearAdmin()">
+                                    <i class="fas fa-plus-circle"></i> Nuevo Administrador
+                                </button>
+                            </div>
+
+                            <!-- Información -->
+                            <div
+                                style="background: linear-gradient(135deg, #fff3cd, #ffeeba); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f39c12;">
+                                <p style="margin: 0; color: #856404;">
+                                    <i class="fas fa-info-circle"></i> <strong>Nota:</strong> Todos los administradores
+                                    tienen los mismos privilegios y pueden gestionar usuarios, incidencias, estudiantes
+                                    y configuración del sistema.
+                                </p>
+                            </div>
+
+                            <!-- Tabla de Administradores -->
+                            <div style="overflow-x: auto;">
+                                <table class="data-table" id="tablaAdministradores">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 200px;">Nombre Completo</th>
+                                            <th style="width: 100px;">DNI</th>
+                                            <th style="width: 200px;">Email</th>
+                                            <th style="width: 80px;">Estado</th>
+                                            <th style="width: 120px;">Activado</th>
+                                            <th style="width: 120px;">Fecha Registro</th>
+                                            <th style="width: 100px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyAdministradores">
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; padding: 30px;">
+                                                <i class="fas fa-spinner fa-spin"></i> Cargando administradores...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
@@ -11002,6 +11059,8 @@
                 cargarEstudiantesAdmin();
             } else if (tabName === 'soporte') {
                 cargarTablaSoporte();
+            } else if (tabName === 'administradores') {
+                cargarAdministradores();
             }
         }
 
@@ -14841,6 +14900,267 @@
                     text: 'No se pudo enviar el mensaje. Inténtalo nuevamente.',
                     confirmButtonColor: 'var(--color-ata-verde)'
                 });
+            }
+        }
+
+        // ===== GESTIÓN DE ADMINISTRADORES =====
+        let administradoresAdmin = [];
+
+        async function cargarAdministradores() {
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('role', 'admin')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                administradoresAdmin = data || [];
+                renderizarTablaAdministradores(administradoresAdmin);
+            } catch (error) {
+                console.error('Error cargando administradores:', error);
+                mostrarNotificacion('Error al cargar administradores', 'error');
+            }
+        }
+
+        function renderizarTablaAdministradores(admins) {
+            const tbody = document.getElementById('tbodyAdministradores');
+
+            if (!admins || admins.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-user-shield" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                            <p style="color: #666;">No hay administradores registrados</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = admins.map(admin => {
+                const esUsuarioActual = currentUser && currentUser.id === admin.id;
+                const fechaRegistro = admin.created_at ? new Date(admin.created_at).toLocaleDateString('es-PE') : '-';
+
+                return `
+                    <tr ${esUsuarioActual ? 'style="background: #e8f5e9;"' : ''}>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #f39c12, #e74c3c); 
+                                            display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                    ${admin.nombre_completo ? admin.nombre_completo.charAt(0).toUpperCase() : 'A'}
+                                </div>
+                                <div>
+                                    <strong>${admin.nombre_completo || 'Sin nombre'}</strong>
+                                    ${esUsuarioActual ? '<span class="badge badge-info" style="margin-left: 5px;">Tú</span>' : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td>${admin.dni || '-'}</td>
+                        <td>${admin.email || '-'}</td>
+                        <td>
+                            <span class="badge ${admin.activo ? 'badge-success' : 'badge-danger'}">
+                                ${admin.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${admin.activado ? 'badge-success' : 'badge-warning'}">
+                                ${admin.activado ? 'Sí' : 'Pendiente'}
+                            </span>
+                        </td>
+                        <td>${fechaRegistro}</td>
+                        <td>
+                            ${esUsuarioActual ?
+                        '<span style="color: #999; font-size: 12px;">-</span>' :
+                        `<button class="btn-action btn-danger" onclick="eliminarAdministrador('${admin.id}')" title="Eliminar administrador">
+                                    <i class="fas fa-trash"></i>
+                                </button>`
+                    }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function mostrarModalCrearAdmin() {
+            const { value: formValues } = await Swal.fire({
+                title: '<i class="fas fa-user-shield" style="color: #e74c3c;"></i> Nuevo Administrador',
+                html: `
+                    <div style="text-align: left; padding: 10px 0;">
+                        <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                            <small style="color: #856404;">
+                                <i class="fas fa-info-circle"></i> El nuevo administrador recibirá un correo para activar su cuenta y crear su contraseña.
+                            </small>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">DNI *</label>
+                            <input type="text" id="admin-dni" class="swal2-input" placeholder="Ej: 12345678" maxlength="8" 
+                                   style="width: 100%; margin: 0;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Nombre Completo *</label>
+                            <input type="text" id="admin-nombre" class="swal2-input" placeholder="APELLIDO PATERNO APELLIDO MATERNO NOMBRES"
+                                   style="width: 100%; margin: 0; text-transform: uppercase;">
+                        </div>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Email *</label>
+                            <input type="email" id="admin-email" class="swal2-input" placeholder="correo@ejemplo.com"
+                                   style="width: 100%; margin: 0;">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#006B3F',
+                confirmButtonText: '<i class="fas fa-plus-circle"></i> Crear Administrador',
+                cancelButtonText: 'Cancelar',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const dni = document.getElementById('admin-dni').value.trim();
+                    const nombre = document.getElementById('admin-nombre').value.trim().toUpperCase();
+                    const email = document.getElementById('admin-email').value.trim().toLowerCase();
+
+                    if (!dni || !nombre || !email) {
+                        Swal.showValidationMessage('Por favor completa todos los campos');
+                        return false;
+                    }
+
+                    if (dni.length !== 8) {
+                        Swal.showValidationMessage('El DNI debe tener 8 dígitos');
+                        return false;
+                    }
+
+                    if (!email.includes('@')) {
+                        Swal.showValidationMessage('Por favor ingresa un email válido');
+                        return false;
+                    }
+
+                    return { dni, nombre, email };
+                }
+            });
+
+            if (formValues) {
+                await crearNuevoAdmin(formValues);
+            }
+        }
+
+        async function crearNuevoAdmin(datos) {
+            try {
+                Swal.fire({
+                    title: 'Creando administrador...',
+                    html: '<i class="fas fa-spinner fa-spin fa-2x"></i>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false
+                });
+
+                // Verificar que no exista ya
+                const { data: existente, error: errorBuscar } = await supabase
+                    .from('users')
+                    .select('id')
+                    .or(`dni.eq.${datos.dni},email.eq.${datos.email}`)
+                    .single();
+
+                if (existente) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Usuario existente',
+                        text: 'Ya existe un usuario con ese DNI o email.',
+                        confirmButtonColor: '#006B3F'
+                    });
+                    return;
+                }
+
+                // Crear usuario en la tabla users
+                const { data: nuevoAdmin, error } = await supabase
+                    .from('users')
+                    .insert({
+                        dni: datos.dni,
+                        nombre_completo: datos.nombre,
+                        email: datos.email,
+                        role: 'admin',
+                        activo: true,
+                        activado: false  // Pendiente de activación
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Enviar correo de activación
+                try {
+                    const { error: emailError } = await supabase.auth.resetPasswordForEmail(datos.email, {
+                        redirectTo: 'https://agenda-virtual-ata.pages.dev/'
+                    });
+
+                    if (emailError) {
+                        console.warn('No se pudo enviar correo de activación:', emailError);
+                    }
+                } catch (e) {
+                    console.warn('Error enviando correo:', e);
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: '¡Administrador creado!',
+                    html: `
+                        <p>Se ha creado la cuenta de administrador para:</p>
+                        <p><strong>${datos.nombre}</strong></p>
+                        <p style="color: #666; font-size: 14px;">Se enviará un correo a ${datos.email} para que active su cuenta.</p>
+                    `,
+                    confirmButtonColor: '#006B3F'
+                });
+
+                // Recargar la lista
+                cargarAdministradores();
+
+            } catch (error) {
+                console.error('Error creando administrador:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo crear el administrador: ' + error.message,
+                    confirmButtonColor: '#006B3F'
+                });
+            }
+        }
+
+        async function eliminarAdministrador(adminId) {
+            // Verificar que no se elimine a sí mismo
+            if (currentUser && currentUser.id === adminId) {
+                mostrarNotificacion('No puedes eliminarte a ti mismo', 'error');
+                return;
+            }
+
+            const admin = administradoresAdmin.find(a => a.id === adminId);
+            const nombre = admin?.nombre_completo || 'este administrador';
+
+            const confirmar = await mostrarConfirmacion(
+                `¿Está seguro de eliminar a <strong>${nombre}</strong>?<br><br>
+                <strong style="color:#e74c3c">Esta acción NO se puede deshacer.</strong><br>
+                <small>Se eliminará completamente del sistema.</small>`,
+                '⚠️ Eliminar Administrador',
+                { tipo: 'warning', btnConfirmar: 'Eliminar', peligroso: true }
+            );
+
+            if (!confirmar) return;
+
+            try {
+                const { error } = await supabase
+                    .from('users')
+                    .delete()
+                    .eq('id', adminId);
+
+                if (error) throw error;
+
+                mostrarNotificacion('✅ Administrador eliminado correctamente', 'success');
+                cargarAdministradores();
+                cargarDashboardAdmin();
+            } catch (error) {
+                console.error('Error eliminando administrador:', error);
+                mostrarNotificacion('Error al eliminar administrador: ' + error.message, 'error');
             }
         }
 
