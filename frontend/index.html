@@ -3965,11 +3965,13 @@
                         </div>
 
                         <div class="card" style="margin-top: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-                                <h3 style="margin: 0;"><i class="fas fa-history"></i> Actividad Reciente del Sistema</h3>
-                                <input type="text" id="filtroActividadNombre" placeholder="Buscar por nombre..." 
-                                       oninput="filtrarActividadReciente()" class="form-control" 
-                                       style="max-width: 200px; height: 36px; font-size: 13px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                                <h3 style="margin: 0;"><i class="fas fa-history"></i> Actividad Reciente del Sistema
+                                </h3>
+                                <input type="text" id="filtroActividadNombre" placeholder="Buscar por nombre..."
+                                    oninput="filtrarActividadReciente()" class="form-control"
+                                    style="max-width: 200px; height: 36px; font-size: 13px;">
                             </div>
                             <div id="adminActividadReciente" style="max-height: 350px; overflow-y: auto;">
                                 <p style="color: #666;"><i class="fas fa-spinner fa-spin"></i> Cargando actividad...</p>
@@ -11157,6 +11159,11 @@
                     'padre': '#00f2fe'
                 };
 
+                // DEBUG: Ver los roles únicos en la BD
+                const rolesUnicos = [...new Set(usuarios?.map(u => u.role).filter(Boolean))];
+                console.log('📊 [DEBUG] Roles únicos en BD:', rolesUnicos);
+                console.log('📊 [DEBUG] Ejemplo de usuarios:', usuarios?.slice(0, 3));
+
                 // Contar usuarios por rol
                 const distribucionRoles = {};
                 todosLosRoles.forEach(rol => distribucionRoles[rol] = 0);
@@ -11212,7 +11219,7 @@
                     .select('id, nombre_completo, role, created_at, email')
                     .order('created_at', { ascending: false })
                     .limit(20);
-                
+
                 // Cargar incidencias con quién las registró
                 const { data: incidenciasDetalle, error: errorIncDet } = await supabase
                     .from('incidencias')
@@ -11223,10 +11230,10 @@
                     `)
                     .order('created_at', { ascending: false })
                     .limit(20);
-                
+
                 // Combinar y ordenar actividad
                 const actividadCombinada = [];
-                
+
                 // Agregar usuarios registrados
                 (usuariosDetalle || []).forEach(u => {
                     actividadCombinada.push({
@@ -11237,7 +11244,7 @@
                         detalle: `Nuevo usuario registrado (${u.role})`
                     });
                 });
-                
+
                 // Agregar incidencias
                 (incidenciasDetalle || []).forEach(inc => {
                     const nombreEstudiante = inc.estudiante?.nombre_completo || 'Estudiante';
@@ -11252,13 +11259,13 @@
                         descripcion: inc.descripcion
                     });
                 });
-                
+
                 // Ordenar por fecha más reciente
                 actividadCombinada.sort((a, b) => b.timestamp - a.timestamp);
-                
+
                 // Guardar globalmente para filtros
                 window.actividadRecienteData = actividadCombinada.slice(0, 30);
-                
+
                 // Renderizar con filtro
                 renderizarActividadReciente(window.actividadRecienteData);
 
@@ -11267,23 +11274,23 @@
                 mostrarNotificacion('Error al cargar el dashboard', 'error');
             }
         }
-        
+
         // Función para renderizar actividad reciente con filtro
         function renderizarActividadReciente(actividades, filtro = '') {
             const container = document.getElementById('adminActividadReciente');
             if (!container) return;
-            
+
             // Filtrar si hay texto de búsqueda
             let actividadesFiltradas = actividades;
             if (filtro.trim()) {
                 const filtroLower = filtro.toLowerCase();
-                actividadesFiltradas = actividades.filter(a => 
+                actividadesFiltradas = actividades.filter(a =>
                     (a.nombre && a.nombre.toLowerCase().includes(filtroLower)) ||
                     (a.registrado_por && a.registrado_por.toLowerCase().includes(filtroLower)) ||
                     (a.detalle && a.detalle.toLowerCase().includes(filtroLower))
                 );
             }
-            
+
             if (actividadesFiltradas.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state" style="padding: 30px; text-align: center;">
@@ -11293,7 +11300,7 @@
                 `;
                 return;
             }
-            
+
             const nombresRoles = {
                 'admin': 'Administrador',
                 'direccion': 'Dirección',
@@ -11303,11 +11310,11 @@
                 'auxiliar': 'Auxiliar',
                 'padre': 'Padre/Madre/Apoderado'
             };
-            
+
             let html = '';
             actividadesFiltradas.slice(0, 15).forEach(item => {
                 let icono, color, texto, subtexto;
-                
+
                 if (item.tipo_actividad === 'usuario_nuevo') {
                     icono = 'fa-user-plus';
                     color = '#4facfe';
@@ -11318,19 +11325,46 @@
                     color = 'var(--color-ata-dorado)';
                     texto = `<strong>${item.nombre}</strong> recibió mérito`;
                     subtexto = `Registrado por: <strong>${item.registrado_por}</strong>`;
-                } else {
+                } else if (item.tipo_actividad === 'accion_admin') {
+                    // Determinar icono según tipo de acción
+                    const iconosAccion = {
+                        'crear': 'fa-plus-circle',
+                        'eliminar': 'fa-trash-alt',
+                        'modificar': 'fa-edit',
+                        'aprobar': 'fa-check-circle',
+                        'rechazar': 'fa-times-circle',
+                        'login': 'fa-sign-in-alt'
+                    };
+                    const coloresAccion = {
+                        'crear': '#28a745',
+                        'eliminar': '#dc3545',
+                        'modificar': '#ffc107',
+                        'aprobar': '#17a2b8',
+                        'rechazar': '#6c757d',
+                        'login': '#6610f2'
+                    };
+                    icono = iconosAccion[item.tipo_accion] || 'fa-cog';
+                    color = coloresAccion[item.tipo_accion] || '#6610f2';
+                    texto = item.detalle;
+                    subtexto = `Por: <strong>${item.registrado_por}</strong>`;
+                } else if (item.tipo_actividad === 'incidencia') {
                     icono = 'fa-exclamation-triangle';
                     color = 'var(--color-ata-rojo)';
                     texto = `<strong>${item.nombre}</strong> recibió demérito`;
                     subtexto = `Registrado por: <strong>${item.registrado_por}</strong>`;
+                } else {
+                    icono = 'fa-info-circle';
+                    color = '#6c757d';
+                    texto = item.detalle || 'Actividad del sistema';
+                    subtexto = item.registrado_por ? `Por: <strong>${item.registrado_por}</strong>` : '';
                 }
-                
+
                 const fechaFormato = item.timestamp.toLocaleDateString('es-PE', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'
                 });
-                
+
                 html += `
                     <div class="actividad-item" style="border-left: 3px solid ${color};">
                         <div style="display: flex; align-items: flex-start; gap: 12px;">
@@ -11344,14 +11378,90 @@
                     </div>
                 `;
             });
-            
+
             container.innerHTML = html;
         }
-        
+
         // Función de filtro para actividad
         function filtrarActividadReciente() {
             const filtro = document.getElementById('filtroActividadNombre')?.value || '';
             renderizarActividadReciente(window.actividadRecienteData || [], filtro);
+        }
+
+        // ===== SISTEMA DE LOG DE ACCIONES DE ADMINISTRADOR =====
+        // Almacenar acciones de admin en memoria (se sincroniza con la actividad)
+        window.adminActionsLog = window.adminActionsLog || [];
+
+        // Función para registrar acciones de administrador
+        async function registrarAccionAdmin(tipoAccion, descripcion, objetoAfectado = null) {
+            if (!currentUser) return;
+
+            const accion = {
+                tipo_actividad: 'accion_admin',
+                tipo_accion: tipoAccion, // 'crear', 'eliminar', 'modificar', 'aprobar', 'rechazar'
+                nombre: objetoAfectado || 'Elemento',
+                registrado_por: currentUser.nombre || currentUser.name || 'Administrador',
+                admin_id: currentUser.id,
+                timestamp: new Date(),
+                detalle: descripcion
+            };
+
+            // Agregar al log local
+            window.adminActionsLog.unshift(accion);
+
+            // Mantener solo los últimos 50 registros en memoria
+            if (window.adminActionsLog.length > 50) {
+                window.adminActionsLog.pop();
+            }
+
+            console.log(`📝 [ADMIN LOG] ${currentUser.nombre}: ${descripcion}`);
+
+            // Intentar guardar en Supabase (tabla actividad_admin si existe)
+            try {
+                await supabase.from('actividad_admin').insert({
+                    admin_id: currentUser.id,
+                    admin_nombre: currentUser.nombre || currentUser.name,
+                    tipo_accion: tipoAccion,
+                    descripcion: descripcion,
+                    objeto_afectado: objetoAfectado,
+                    created_at: new Date().toISOString()
+                });
+            } catch (e) {
+                // Si la tabla no existe, solo guardar en memoria local
+                console.log('⚠️ Tabla actividad_admin no existe, usando solo memoria local');
+            }
+
+            // Actualizar la visualización si estamos en el dashboard
+            if (window.actividadRecienteData) {
+                // Agregar al inicio de la actividad reciente
+                window.actividadRecienteData.unshift(accion);
+                renderizarActividadReciente(window.actividadRecienteData);
+            }
+        }
+
+        // Función para cargar acciones de admin desde Supabase
+        async function cargarAccionesAdmin() {
+            try {
+                const { data, error } = await supabase
+                    .from('actividad_admin')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(30);
+
+                if (data && !error) {
+                    return data.map(a => ({
+                        tipo_actividad: 'accion_admin',
+                        tipo_accion: a.tipo_accion,
+                        nombre: a.objeto_afectado || 'Sistema',
+                        registrado_por: a.admin_nombre,
+                        timestamp: new Date(a.created_at),
+                        detalle: a.descripcion
+                    }));
+                }
+            } catch (e) {
+                console.log('⚠️ No se pudieron cargar acciones de admin');
+            }
+            return window.adminActionsLog || [];
         }
 
         // ===== GESTIÓN DE USUARIOS =====
@@ -11635,6 +11745,11 @@
 
                 if (error) throw error;
 
+                // Registrar acción en log
+                await registrarAccionAdmin('modificar',
+                    `${nuevoEstado ? 'Activó' : 'Desactivó'} usuario: ${usuario?.nombre_completo || 'Usuario'}`,
+                    usuario?.nombre_completo);
+
                 mostrarNotificacion(`Usuario ${nuevoEstado ? 'activado' : 'desactivado'} en el sistema`, 'success');
                 cargarUsuariosAdmin();
             } catch (error) {
@@ -11678,6 +11793,11 @@
                     .eq('id', userId);
 
                 if (error) throw error;
+
+                // Registrar acción en log de actividad
+                await registrarAccionAdmin('eliminar',
+                    `Eliminó usuario: ${usuario?.nombre_completo || usuario?.email || 'Usuario'}`,
+                    usuario?.nombre_completo || usuario?.email);
 
                 mostrarNotificacion('✅ Usuario eliminado completamente del sistema', 'success');
                 cargarUsuariosAdmin();
@@ -15296,6 +15416,11 @@
                     .eq('id', adminId);
 
                 if (error) throw error;
+
+                // Registrar acción en log
+                await registrarAccionAdmin('eliminar',
+                    `Eliminó administrador: ${nombre}`,
+                    nombre);
 
                 mostrarNotificacion('✅ Administrador eliminado correctamente', 'success');
                 cargarAdministradores();
