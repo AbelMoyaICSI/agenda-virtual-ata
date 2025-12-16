@@ -11097,20 +11097,78 @@
         // ===== DASHBOARD DEL ADMIN =====
         async function cargarDashboardAdmin() {
             try {
-                // Contar usuarios
-                const { data: usuarios, error: errorUsuarios } = await supabase
-                    .from('users')
-                    .select('id, role, activo, created_at');
+                // ==========================================
+                // CARGA DE DATOS DEL DASHBOARD
+                // ==========================================
+                
+                // 1. USUARIOS - Usar count exacto + cargar datos para distribución
+                let usuarios = [];
+                let totalUsuariosCount = 0;
+                
+                try {
+                    // Primero obtener el conteo total
+                    const { count: countUsers, error: errCount } = await supabase
+                        .from('users')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    totalUsuariosCount = countUsers || 0;
+                    console.log(`📊 Total usuarios (count): ${totalUsuariosCount}`);
+                    
+                    // Cargar datos para la distribución por rol (hasta 5000)
+                    const { data: usersData, error: errUsers } = await supabase
+                        .from('users')
+                        .select('id, role, activo, created_at, nombre_completo')
+                        .order('created_at', { ascending: false });
+                    
+                    if (usersData) {
+                        usuarios = usersData;
+                        console.log(`📊 Usuarios cargados: ${usuarios.length}`);
+                        // Log de roles únicos para debug
+                        const rolesUnicos = [...new Set(usuarios.map(u => u.role).filter(Boolean))];
+                        console.log(`📊 Roles únicos encontrados:`, rolesUnicos);
+                    }
+                } catch (e) {
+                    console.error('Error cargando usuarios:', e);
+                }
 
-                // Contar estudiantes
-                const { data: estudiantes, error: errorEst } = await supabase
-                    .from('estudiantes')
-                    .select('id, activo');
-
-                // Contar incidencias
-                const { data: incidencias, error: errorInc } = await supabase
-                    .from('incidencias')
-                    .select('id, tipo, fecha, created_at');
+                // 2. ESTUDIANTES - Solo count
+                let totalEstudiantesCount = 0;
+                try {
+                    const { count: countEst, error: errEst } = await supabase
+                        .from('estudiantes')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    totalEstudiantesCount = countEst || 0;
+                    console.log(`📊 Total estudiantes: ${totalEstudiantesCount}`);
+                } catch (e) {
+                    console.error('Error cargando estudiantes:', e);
+                }
+                
+                // 3. INCIDENCIAS - Count + datos para gráfico
+                let incidencias = [];
+                let totalIncidenciasCount = 0;
+                
+                try {
+                    // Primero el count
+                    const { count: countInc, error: errCountInc } = await supabase
+                        .from('incidencias')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    totalIncidenciasCount = countInc || 0;
+                    console.log(`📊 Total incidencias: ${totalIncidenciasCount}`);
+                    
+                    // Cargar datos para el gráfico del mes
+                    const { data: incData, error: errInc } = await supabase
+                        .from('incidencias')
+                        .select('id, tipo, fecha, created_at, descripcion')
+                        .order('fecha', { ascending: false });
+                    
+                    if (incData) {
+                        incidencias = incData;
+                    }
+                } catch (e) {
+                    console.error('Error cargando incidencias:', e);
+                }
 
                 // Contar solicitudes pendientes desde solicitudes_registro
                 const { count: countSolicitudes, error: errorSol } = await supabase
@@ -11120,10 +11178,10 @@
 
                 const solicitudesPendientes = countSolicitudes || 0;
 
-                // Actualizar números
-                document.getElementById('adminTotalUsuarios').textContent = usuarios?.length || 0;
-                document.getElementById('adminTotalEstudiantes').textContent = estudiantes?.length || 0;
-                document.getElementById('adminTotalIncidencias').textContent = incidencias?.length || 0;
+                // Actualizar números con counts exactos
+                document.getElementById('adminTotalUsuarios').textContent = totalUsuariosCount || 0;
+                document.getElementById('adminTotalEstudiantes').textContent = totalEstudiantesCount || 0;
+                document.getElementById('adminTotalIncidencias').textContent = totalIncidenciasCount || 0;
                 document.getElementById('adminSolicitudesPendientes').textContent = solicitudesPendientes;
 
                 // Actualizar badge de solicitudes y campanita
