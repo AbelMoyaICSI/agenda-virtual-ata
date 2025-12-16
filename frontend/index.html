@@ -11260,6 +11260,26 @@
                     });
                 });
 
+                // Agregar acciones de administradores al log
+                // Cargar desde Supabase si existe la tabla, o usar memoria local
+                const accionesAdmin = await cargarAccionesAdmin();
+                accionesAdmin.forEach(accion => {
+                    actividadCombinada.push(accion);
+                });
+
+                // También agregar del log local en memoria
+                (window.adminActionsLog || []).forEach(accion => {
+                    // Evitar duplicados verificando timestamp
+                    const yaExiste = actividadCombinada.some(a =>
+                        a.tipo_actividad === 'accion_admin' &&
+                        a.detalle === accion.detalle &&
+                        a.timestamp?.getTime() === accion.timestamp?.getTime()
+                    );
+                    if (!yaExiste) {
+                        actividadCombinada.push(accion);
+                    }
+                });
+
                 // Ordenar por fecha más reciente
                 actividadCombinada.sort((a, b) => b.timestamp - a.timestamp);
 
