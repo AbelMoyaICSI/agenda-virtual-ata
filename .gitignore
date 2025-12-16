@@ -53,3 +53,13 @@ wrangler.toml.backup
 # Database
 *.sqlite
 *.db
+
+# Documentation/Notes with potential secrets
+Dashboard Data Accuracy.md
+*.conversation.md
+NOTAS*.md
+debug_*.py
+*.backup.md
+
+# Scripts de debug con credenciales
+debug_supabase.py
