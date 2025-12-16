@@ -8054,8 +8054,17 @@
 
         // Efectos visuales
         document.addEventListener('DOMContentLoaded', async function () {
+            // ============ DEBUG: MOSTRAR URL COMPLETA AL CARGAR ============
+            console.log('🌐 [DEBUG] URL completa:', window.location.href);
+            console.log('🌐 [DEBUG] Hash:', window.location.hash);
+            console.log('🌐 [DEBUG] Search:', window.location.search);
+            // ================================================================
+
             // 🔐 VERIFICAR SI VIENE DE UN ENLACE DE RECUPERACIÓN DE CONTRASEÑA
             const hash = window.location.hash;
+            console.log('🔐 [DEBUG] Verificando hash para recovery:', hash);
+            console.log('🔐 [DEBUG] Contiene type=recovery?', hash?.includes('type=recovery'));
+
             if (hash && hash.includes('type=recovery')) {
                 console.log('🔑 Token de recuperación detectado en URL');
 
