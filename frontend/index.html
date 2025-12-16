@@ -8089,30 +8089,32 @@
 
                         console.log('✅ Sesión de recuperación establecida');
 
-                        // Ocultar TODOS los steps excepto step6
-                        document.getElementById('step1').classList.add('hidden');
-                        document.getElementById('step1').classList.remove('visible');
-                        document.getElementById('step1b').classList.add('hidden');
-                        document.getElementById('step1b').classList.remove('visible');
-                        document.getElementById('step2').classList.add('hidden');
-                        document.getElementById('step2').classList.remove('visible');
-                        document.getElementById('step3').classList.add('hidden');
-                        document.getElementById('step3').classList.remove('visible');
-                        document.getElementById('step4').classList.add('hidden');
-                        document.getElementById('step4').classList.remove('visible');
-                        document.getElementById('step4b').style.display = 'none';
-                        document.getElementById('step5').style.display = 'none';
-
-                        // Mostrar step6 (formulario de nueva contraseña)
-                        document.getElementById('step6').style.display = 'block';
-
-                        // Enfocar en el campo de contraseña
-                        setTimeout(() => {
-                            document.getElementById('nueva_password_reset').focus();
-                        }, 300);
-
                         // Limpiar el hash de la URL (por seguridad)
                         window.history.replaceState(null, '', window.location.pathname);
+
+                        // Obtener el email del usuario
+                        const userEmail = session.user?.email || 'tu cuenta';
+                        console.log('📝 [RECOVERY] Email del usuario:', userEmail);
+
+                        // Esperar a que SweetAlert2 esté disponible
+                        const waitForSwal = () => {
+                            return new Promise((resolve) => {
+                                const checkSwal = () => {
+                                    if (typeof Swal !== 'undefined') {
+                                        resolve();
+                                    } else {
+                                        setTimeout(checkSwal, 100);
+                                    }
+                                };
+                                checkSwal();
+                            });
+                        };
+
+                        await waitForSwal();
+                        console.log('✅ [RECOVERY] SweetAlert disponible');
+
+                        // Llamar a la función de modal
+                        await mostrarModalCambioPassword(userEmail);
 
                         return; // No continuar con el flujo normal
                     } catch (err) {
