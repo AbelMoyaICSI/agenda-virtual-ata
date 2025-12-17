@@ -8437,6 +8437,14 @@
         function selectRoleAdmin() {
             selectedUserRole = 'admin';
 
+            // CRÍTICO: Exponer funciones INMEDIATAMENTE al scope global
+            // Esto previene el "race condition" donde los botones con onclick
+            // intentan llamar a selectRole() antes de que esté disponible
+            window.selectRole = selectRole;
+            window.selectRoleAdmin = selectRoleAdmin;
+
+            // Continuar con el resto...
+
             // Actualizar texto del rol seleccionado
             document.getElementById('roleText').textContent = 'Administrador del Sistema';
 
