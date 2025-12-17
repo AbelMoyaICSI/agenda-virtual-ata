@@ -2673,6 +2673,19 @@
         .message-inbox.message-animate>i {
             animation: bell-bounce 0.6s ease;
         }
+
+        /* Clases de utilidad para visibilidad */
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .visible {
+            display: block !important;
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 
@@ -18690,8 +18703,15 @@ ${'='.repeat(70)}
         window.testButton = testButton;
         window.handleLoginClick = handleLoginClick;
 
+        // Exponer funciones de navegación a window para asegurar que los onclick funcionen
+        window.selectRole = selectRole;
+        window.selectRoleAdmin = selectRoleAdmin;
+        window.backToRoleSelection = backToRoleSelection;
+        // window.showDemoLogin y window.showActivarCuenta podrían necesitarse si existen en el código original
+
         console.log('🚀 JavaScript cargado completamente');
     </script>
 </body>
 
 </html>
+```

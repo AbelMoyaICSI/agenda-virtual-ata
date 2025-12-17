@@ -57,6 +57,30 @@ const LoginPage = ({ onLogin }) => {
     navigate('/solicitar-registro');
   };
 
+  const handleTroubleshoot = async () => {
+    if (window.confirm('¿Deseas limpiar los datos de sesión y recargar? Esto solucionará problemas de cookies o caché.')) {
+      try {
+        // 1. Limpiar almacenamiento local
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 2. Intentar desregistrar Service Workers (PWA) para forzar actualización
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+          }
+        }
+
+        // 3. Forzar recarga desde el servidor
+        window.location.reload(true);
+      } catch (error) {
+        console.error('Error limpiando caché:', error);
+        window.location.reload();
+      }
+    }
+  };
+
   // Pantalla de login
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-ata-verde to-ata-azul p-4">
@@ -64,16 +88,16 @@ const LoginPage = ({ onLogin }) => {
         {/* Logo y título */}
         <div className="text-center">
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <img 
-              src="/assets/images/logo-ata.png" 
-              alt="I.E. Antonio Torres Araujo" 
+            <img
+              src="/assets/images/logo-ata.png"
+              alt="I.E. Antonio Torres Araujo"
               className="w-16 h-16 object-contain"
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'block';
               }}
             />
-            <span 
+            <span
               className="text-ata-verde font-black text-2xl"
               style={{ display: 'none' }}
             >
@@ -200,6 +224,18 @@ const LoginPage = ({ onLogin }) => {
             >
               <span>📝</span>
               Solicitar Registro
+            </button>
+          </div>
+
+          {/* Botón de solución de problemas */}
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={handleTroubleshoot}
+              className="text-white text-xs opacity-60 hover:opacity-100 transition-opacity underline flex items-center justify-center mx-auto gap-1"
+            >
+              <AlertCircle className="h-3 w-3" />
+              ¿Problemas para iniciar sesión?
             </button>
           </div>
         </div>
