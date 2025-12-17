@@ -9096,7 +9096,7 @@
 
         // Configuración de Supabase
 
-        const SUPABASE_URL = 'https://jbdjlivrfkrcivkrnuio.supabase.co';
+        const SUPABASE_URL = 'https://jbdjlivrfkrcivkrnuio.supabaseClient.co';
 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZGpsaXZyZmtyY2l2a3JudWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNDA5ODgsImV4cCI6MjA3ODcxNjk4OH0.eZnzV0EJgVtYe_evH-xQX5gmT8T6uKI09D3PRUB0fcI';
 
@@ -9902,9 +9902,8 @@
 
 
 
-                let query = supabase
-
-                    .from('incidencias')
+                let query = supabaseClient
+            .from('incidencias')
 
                     .select(`
 
@@ -12496,9 +12495,8 @@
 
                 // Obtener todas las incidencias con información de estudiantes
 
-                let query = supabase
-
-                    .from('incidencias')
+                let query = supabaseClient
+            .from('incidencias')
 
                     .select(`
 
@@ -17668,9 +17666,8 @@
 
                 // Construir consulta según lo que se ingresó
 
-                let query = supabase
-
-                    .from('users')
+                let query = supabaseClient
+            .from('users')
 
                     .select('id, nombre_completo, role, activado, email, dni, telefono');
 
@@ -18664,9 +18661,8 @@
 
                 // Construir query flexible (DNI OR Nombre)
 
-                let query = supabase
-
-                    .from('users')
+                let query = supabaseClient
+            .from('users')
 
                     .select('id, nombre_completo, email, dni, role, activado');
 
@@ -28378,9 +28374,8 @@
 
                 // ADMIN: Recibe solicitudes de registro
 
-                const canalSolicitudes = supabase
-
-                    .channel('admin-solicitudes-' + Date.now())
+                const canalSolicitudes = supabaseClient
+            .channel('admin-solicitudes-' + Date.now())
 
                     .on('postgres_changes',
 
@@ -28420,9 +28415,8 @@
 
                 // ADMIN: Recibe mensajes de soporte
 
-                const canalSoporte = supabase
-
-                    .channel('admin-soporte-' + Date.now())
+                const canalSoporte = supabaseClient
+            .channel('admin-soporte-' + Date.now())
 
                     .on('postgres_changes',
 
@@ -28468,9 +28462,8 @@
 
                 // ADMIN: Recibe notificación cuando usuario marca como leído su respuesta
 
-                const canalLectura = supabase
-
-                    .channel('admin-lectura-' + Date.now())
+                const canalLectura = supabaseClient
+            .channel('admin-lectura-' + Date.now())
 
                     .on('postgres_changes',
 
@@ -28552,9 +28545,8 @@
 
                 // PADRE: Recibe TODAS las nuevas incidencias y filtra por hijo
 
-                const canalIncidencias = supabase
-
-                    .channel('padre-incidencias-' + Date.now())
+                const canalIncidencias = supabaseClient
+            .channel('padre-incidencias-' + Date.now())
 
                     .on('postgres_changes',
 
@@ -28684,9 +28676,8 @@
 
                 // PADRE: Respuestas a mensajes de soporte
 
-                const canalRespuestas = supabase
-
-                    .channel('padre-respuestas-' + Date.now())
+                const canalRespuestas = supabaseClient
+            .channel('padre-respuestas-' + Date.now())
 
                     .on('postgres_changes',
 
@@ -28774,9 +28765,8 @@
 
                 // DOCENTE/AUXILIAR/OTROS: Respuestas a sus mensajes de soporte
 
-                const canalUsuario = supabase
-
-                    .channel('usuario-respuestas-' + Date.now())
+                const canalUsuario = supabaseClient
+            .channel('usuario-respuestas-' + Date.now())
 
                     .on('postgres_changes',
 
@@ -28860,9 +28850,8 @@
 
                 // DOCENTE: Recibir confirmaciones de padres sobre incidencias
 
-                const canalConfirmaciones = supabase
-
-                    .channel('docente-confirmaciones-' + Date.now())
+                const canalConfirmaciones = supabaseClient
+            .channel('docente-confirmaciones-' + Date.now())
 
                     .on('postgres_changes',
 
