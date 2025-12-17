@@ -3,20 +3,21 @@
 // Maneja notificaciones push y caché para PWA
 // ============================================================================
 
-const CACHE_NAME = 'agenda-ata-v3';
+const CACHE_NAME = 'agenda-ata-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Archivos a cachear para funcionamiento offline básico
+// IMPORTANT: Do NOT cache index.html - always fetch fresh from network
+// This prevents mobile sync issues where stale data shows
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json'
+  // Removed '/' and '/index.html' to force fresh loads
 ];
 
 // ===== INSTALACIÓN DEL SERVICE WORKER =====
 self.addEventListener('install', (event) => {
   console.log('🔧 Service Worker: Instalando...');
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -33,7 +34,7 @@ self.addEventListener('install', (event) => {
 // ===== ACTIVACIÓN =====
 self.addEventListener('activate', (event) => {
   console.log('⚡ Service Worker: Activando...');
-  
+
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -55,16 +56,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Solo cachear requests GET
   if (event.request.method !== 'GET') return;
-  
+
   // Ignorar requests de Supabase, APIs externas y extensiones de Chrome
   const url = event.request.url;
-  if (url.includes('supabase.co') || 
-      url.includes('googleapis.com') ||
-      url.startsWith('chrome-extension://') ||
-      url.startsWith('moz-extension://')) {
+  if (url.includes('supabase.co') ||
+    url.includes('googleapis.com') ||
+    url.startsWith('chrome-extension://') ||
+    url.startsWith('moz-extension://')) {
     return;
   }
-  
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -89,7 +90,7 @@ self.addEventListener('fetch', (event) => {
 // ===== 🔔 RECEPCIÓN DE NOTIFICACIONES PUSH =====
 self.addEventListener('push', (event) => {
   console.log('📬 Push recibido:', event);
-  
+
   let data = {
     title: '📚 Agenda Virtual ATA',
     body: 'Tienes una nueva notificación',
@@ -102,7 +103,7 @@ self.addEventListener('push', (event) => {
       url: '/'
     }
   };
-  
+
   // Parsear datos del push si vienen
   if (event.data) {
     try {
@@ -112,9 +113,9 @@ self.addEventListener('push', (event) => {
       data.body = event.data.text();
     }
   }
-  
+
   console.log('🔔 Mostrando notificación:', data.title);
-  
+
   // Notificar a todos los clientes activos para que reproduzcan el DING
   event.waitUntil(
     Promise.all([
@@ -134,7 +135,7 @@ self.addEventListener('push', (event) => {
           { action: 'close', title: 'Cerrar' }
         ]
       }),
-      
+
       // 2. Enviar mensaje a clientes para reproducir DING
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
         clients.forEach(client => {
@@ -153,15 +154,15 @@ self.addEventListener('push', (event) => {
 // ===== CLICK EN NOTIFICACIÓN =====
 self.addEventListener('notificationclick', (event) => {
   console.log('👆 Click en notificación:', event.notification.tag);
-  
+
   event.notification.close();
-  
+
   const urlToOpen = event.notification.data?.url || '/';
-  
+
   if (event.action === 'close') {
     return;
   }
-  
+
   // Abrir o enfocar la ventana de la app
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -197,7 +198,7 @@ self.addEventListener('message', (event) => {
 // ===== SINCRONIZACIÓN EN BACKGROUND (futuro) =====
 self.addEventListener('sync', (event) => {
   console.log('🔄 Background sync:', event.tag);
-  
+
   if (event.tag === 'sync-incidencias') {
     event.waitUntil(
       // Aquí se pueden sincronizar incidencias pendientes
