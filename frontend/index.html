@@ -4551,6 +4551,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiZGpsaXZyZmtyY2l2a3JudWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNDA5ODgsImV4cCI6MjA3ODcxNjk4OH0.eZnzV0EJgVtYe_evH-xQX5gmT8T6uKI09D3PRUB0fcI';
 
         // Crear cliente Supabase con persistencia de sesión en localStorage
+        // NOTA: Si hay error "supabase already declared", verificar que no exista otra declaración
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
                 persistSession: true,
